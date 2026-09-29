@@ -848,37 +848,138 @@
     $('paceSelect').disabled=running;
     $('prioritySelect').disabled=running;
     $('supplySelect').disabled=running;
+    $('screen-mission').classList.toggle('expedition-running',running);
     document.querySelectorAll('.main-nav .nav-btn').forEach(btn=>btn.disabled=running);
   }
 
-  function partyTokens(party){
-    return party.map(h=>`<div class="party-token"><span class="token-icon">${DATA.classes[h.cls].icon}</span>${h.name}</div>`).join('');
+  function stageVisualClass(index){
+    return ['stage-travel','stage-exploration','stage-encounter','stage-camp','stage-return'][index]||'stage-travel';
+  }
+
+  function featuredHeroForStage(stage,party,index){
+    const named=party.find(h=>stage.text?.includes(h.name)||stage.title?.includes(h.name));
+    return named||party[index%Math.max(1,party.length)]||party[0];
+  }
+
+  function partyTokens(party,featuredId=null){
+    return party.map((h,i)=>{
+      const cls=DATA.classes[h.cls];
+      const spec=specializationData(h);
+      const stateIcon=h.injury?'✚':featuredId===h.id?'✦':'•';
+      const classes=['story-hero-card'];
+      if(h.injury) classes.push('injured');
+      if(featuredId===h.id) classes.push('featured');
+      return `<div class="${classes.join(' ')}">
+        <span class="story-hero-state">${stateIcon}</span>
+        <div class="story-hero-portrait">${cls.icon}</div>
+        <div class="story-hero-info">
+          <b>${h.name}</b>
+          <small>${spec?.name||h.cls} · Nv.${h.level}${h.injury?' · '+h.injury.name:''}</small>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function storyQuoteFor(stage,hero,index){
+    const name=hero?.name||'La party';
+    const quotes=[
+      `“Un buen viaje empieza antes de abandonar el camino conocido.” — ${name}`,
+      `“Miremos dos veces. Los lugares viejos siempre guardan algo.” — ${name}`,
+      `“Mantengan la formación. Salimos de aquí juntos.” — ${name}`,
+      `“Mañana seguimos. Esta noche todavía somos compañeros alrededor del fuego.” — ${name}`,
+      `“Que el gremio recuerde lo que encontramos aquí.” — ${name}`
+    ];
+    return quotes[index]||quotes[0];
+  }
+
+  function renderStoryConsequences(items){
+    const box=$('recentConsequences');
+    if(!items?.length){
+      box.innerHTML='<div class="consequence-placeholder">Sin consecuencias visibles en esta etapa.</div>';
+      return;
+    }
+    box.innerHTML=items.slice(0,3).map((e,i)=>{
+      const icon=e.kind==='bad'?'!':e.kind==='bond'?'♥':e.kind==='good'?'✦':'◆';
+      return `<div class="consequence-card ${e.kind||''}" style="animation-delay:${i*0.05}s">
+        <strong>${icon}</strong>
+        <span>${e.text}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderStoryLog(){
+    if(!expeditionView) return;
+    const viewed=expeditionView.viewedStages||[];
+    $('storyLog').innerHTML=viewed.length?viewed.map(i=>{
+      const stage=expeditionView.stages[i];
+      const kind=stage.effects.some(e=>e.kind==='bad')?'bad':stage.effects.some(e=>e.kind==='good')?'good':'';
+      const label=stage.label.replace(/^ETAPA\s*\d+\s*·\s*/,'');
+      return `<div class="story-log-row ${i===expeditionView.index?'current':''} ${kind}">[${label}] ${stage.title}</div>`;
+    }).join(''):'<div class="story-log-row muted">La historia comenzará al enviar la party.</div>';
+  }
+
+  function renderStageEventList(stage,index){
+    const effectRows=stage.effects.slice(0,2).map(e=>`<div class="stage-event">${e.kind==='bond'?'♥':e.kind==='bad'?'!':'◇'} ${e.text}</div>`).join('');
+    $('stageEventList').innerHTML=`
+      <div class="stage-event active">✦ ${stage.title}</div>
+      ${effectRows}
+      ${index<4?'<div class="stage-event muted">? La siguiente etapa permanece por descubrir...</div>':''}`;
+  }
+
+  function animateEventCard(){
+    const card=document.querySelector('.event-card');
+    if(!card) return;
+    card.style.animation='none';
+    void card.offsetWidth;
+    card.style.animation='eventReveal .34s ease';
   }
 
   function renderExpeditionStage(){
     if(!expeditionView) return;
-    const stage=expeditionView.stages[expeditionView.index];
+    const index=expeditionView.index;
+    const stage=expeditionView.stages[index];
+    const featured=featuredHeroForStage(stage,expeditionView.party,index);
+
+    expeditionView.viewedStages=expeditionView.viewedStages||[];
+    if(!expeditionView.viewedStages.includes(index)) expeditionView.viewedStages.push(index);
+
     $('expeditionTheater').classList.add('running');
     $('expeditionTheater').classList.remove('complete');
     $('expeditionTitle').textContent=expeditionView.mission.name;
-    $('expeditionPartyVisual').innerHTML=partyTokens(expeditionView.party);
+    $('storyObjective').textContent=expeditionView.mission.desc;
+    $('expeditionPartyVisual').innerHTML=partyTokens(expeditionView.party,featured?.id);
+
+    const scene=$('storyScene');
+    scene.classList.remove('stage-travel','stage-exploration','stage-encounter','stage-camp','stage-return');
+    scene.classList.add(stageVisualClass(index));
 
     document.querySelectorAll('.exp-step').forEach((el,i)=>{
-      el.classList.toggle('done',i<expeditionView.index);
-      el.classList.toggle('active',i===expeditionView.index);
+      el.classList.toggle('done',i<index);
+      el.classList.toggle('active',i===index);
     });
 
     $('expeditionStageIcon').textContent=stage.icon;
     $('expeditionStageLabel').textContent=stage.label;
     $('expeditionStageTitle').textContent=stage.title;
     $('expeditionStageText').textContent=stage.text;
+
+    $('storyEventIcon').textContent=stage.icon;
+    $('storyEventTitle').textContent=stage.title;
+    $('storyEventText').textContent=stage.text;
+    $('storyQuote').textContent=storyQuoteFor(stage,featured,index);
     $('expeditionStageEffects').innerHTML=stage.effects.map(e=>`<span class="effect-chip ${e.kind||''}">${e.text}</span>`).join('');
+
+    renderStageEventList(stage,index);
+    renderStoryConsequences(stage.effects);
+    renderStoryLog();
+    animateEventCard();
+
     $('expeditionSummary').classList.add('is-hidden');
     $('expeditionContinueBtn').classList.remove('is-hidden');
     $('toggleReportBtn').classList.add('is-hidden');
     $('report').classList.add('is-hidden');
     $('reportActions').classList.add('is-hidden');
-    $('expeditionContinueBtn').textContent=expeditionView.index===4?'Ver resumen →':'Continuar →';
+    $('expeditionContinueBtn').textContent=index===4?'Ver resumen →':'Continuar →';
   }
 
   function finishExpeditionPresentation(){
@@ -887,20 +988,41 @@
       el.classList.remove('active');
       el.classList.add('done');
     });
+
+    const scene=$('storyScene');
+    scene.classList.remove('stage-travel','stage-exploration','stage-encounter','stage-camp');
+    scene.classList.add('stage-return');
+
     $('expeditionTheater').classList.remove('running');
     $('expeditionTheater').classList.add('complete');
     $('expeditionStageIcon').textContent=expeditionView.success?'🏆':'🏠';
     $('expeditionStageLabel').textContent='EXPEDICIÓN COMPLETA';
     $('expeditionStageTitle').textContent=expeditionView.success?'La party regresa victoriosa':'La party consigue regresar';
     $('expeditionStageText').textContent=expeditionView.success
-      ?'El contrato terminó. Revisa cómo cambió el grupo.'
-      :'No lograron el objetivo, pero el gremio tendrá otra oportunidad.';
+      ?'El contrato terminó. Las consecuencias ya forman parte de la historia del gremio.'
+      :'El objetivo quedó pendiente, pero la historia de esta party continúa.';
+
+    $('storyEventIcon').textContent=expeditionView.success?'🏆':'🏠';
+    $('storyEventTitle').textContent=expeditionView.success?'Victoria':'Regreso al gremio';
+    $('storyEventText').textContent=expeditionView.success
+      ?'El Grifo de Plata recibe a la party con el contrato cumplido.'
+      :'El gremio recibe al grupo y comienza a preparar la siguiente oportunidad.';
+    $('storyQuote').textContent=expeditionView.success
+      ?'“Hoy volvemos con una historia que vale la pena contar.”'
+      :'“Volver juntos también forma parte de ser aventurero.”';
     $('expeditionStageEffects').innerHTML='';
+
     $('expeditionSummary').innerHTML=expeditionView.summary.map(item=>`
       <div class="summary-card ${item.kind||''}">
         <strong>${item.title}</strong>${item.text}
       </div>`).join('');
     $('expeditionSummary').classList.remove('is-hidden');
+
+    renderStoryConsequences(expeditionView.summary.slice(0,3).map(x=>({text:`${x.title}: ${x.text}`,kind:x.kind})));
+    $('stageEventList').innerHTML='<div class="stage-event active">✓ La expedición ha terminado.</div><div class="stage-event">La crónica del gremio fue actualizada.</div>';
+    renderStoryLog();
+    animateEventCard();
+
     $('expeditionContinueBtn').classList.add('is-hidden');
     $('toggleReportBtn').classList.remove('is-hidden');
     $('reportActions').classList.remove('is-hidden');
@@ -1068,7 +1190,7 @@
     $('report').innerHTML=lines.join('');
     $('resultTag').textContent=success?'Victoria':'Retirada';
 
-    expeditionView={mission,party,stages,summary,success,index:0};
+    expeditionView={mission,party,stages,summary,success,index:0,viewedStages:[]};
     saveState(false);
     renderAll();
     navigate('mission');
@@ -1545,7 +1667,7 @@
   });
 
   $('resetBtn').addEventListener('click',()=>{
-    if(!window.confirm('¿Reiniciar toda la partida V1.1 y borrar el guardado local?')) return;
+    if(!window.confirm('¿Reiniciar toda la partida V1.2 y borrar el guardado local?')) return;
     localStorage.removeItem(SAVE_KEY);
     localStorage.removeItem(LEGACY_SAVE_KEY);
     state=freshState();
