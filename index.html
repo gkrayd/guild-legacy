@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#171510" />
-  <title>Guild Legacy — V0.3 Mobile Landscape</title>
+  <title>Guild Legacy — V0.4 Expedition Experience</title>
   <link rel="stylesheet" href="css/game.css" />
 </head>
 <body>
@@ -21,7 +21,7 @@
       <div class="brand">
         <span class="eyebrow">GUILD LEGACY</span>
         <strong>El Grifo de Plata</strong>
-        <span class="build">V0.3</span>
+        <span class="build">V0.4</span>
       </div>
 
       <div class="hud-stats">
@@ -192,11 +192,45 @@
           </div>
           <span id="resultTag" class="tag">Sin expediciones</span>
         </div>
-        <div id="report" class="report">
-          <p class="muted">La historia de la expedición aparecerá aquí.</p>
-          <p class="muted">Personalidad, combate, heridas, XP y vínculos se resolverán automáticamente.</p>
+        <div id="expeditionTheater" class="expedition-theater">
+          <div class="expedition-head">
+            <div>
+              <span class="section-kicker">SECUENCIA DE EXPEDICIÓN</span>
+              <strong id="expeditionTitle">Prepara una party y elige un destino</strong>
+            </div>
+            <div id="expeditionPartyVisual" class="expedition-party-visual"></div>
+          </div>
+
+          <div id="expeditionSteps" class="expedition-steps">
+            <div class="exp-step" data-stage="0"><span>1</span>Viaje</div>
+            <div class="exp-step" data-stage="1"><span>2</span>Exploración</div>
+            <div class="exp-step" data-stage="2"><span>3</span>Encuentro</div>
+            <div class="exp-step" data-stage="3"><span>4</span>Campamento</div>
+            <div class="exp-step" data-stage="4"><span>5</span>Regreso</div>
+          </div>
+
+          <div id="expeditionScene" class="expedition-scene">
+            <div id="expeditionStageIcon" class="stage-icon">🗺️</div>
+            <div class="stage-copy">
+              <span id="expeditionStageLabel" class="section-kicker">LISTO</span>
+              <h3 id="expeditionStageTitle">La próxima historia empieza aquí</h3>
+              <p id="expeditionStageText">Pulsa “Enviar expedición” para ver el viaje desarrollarse paso a paso.</p>
+              <div id="expeditionStageEffects" class="stage-effects"></div>
+            </div>
+          </div>
+
+          <div id="expeditionSummary" class="expedition-summary is-hidden"></div>
+
+          <div class="expedition-controls">
+            <button id="expeditionContinueBtn" type="button" class="primary is-hidden">Continuar →</button>
+            <button id="toggleReportBtn" type="button" class="secondary is-hidden">Ver relato completo</button>
+          </div>
         </div>
-        <div class="report-actions">
+
+        <div id="report" class="report is-hidden">
+          <p class="muted">La historia completa de la expedición aparecerá aquí.</p>
+        </div>
+        <div id="reportActions" class="report-actions is-hidden">
           <button type="button" class="secondary" data-go="party">Revisar Party</button>
           <button type="button" class="secondary" data-go="chronicle">Ver Crónica</button>
           <button type="button" class="secondary" data-go="guild">Volver al Gremio</button>
