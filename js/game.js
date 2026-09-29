@@ -1,49 +1,150 @@
+
 (() => {
   'use strict';
 
   const DATA = window.GUILD_DATA;
-  const SAVE_KEY = 'guildLegacy_v02_save';
-  let nextId = 1;
+  const SAVE_KEY = 'guildLegacy_v1_save';
+  const LEGACY_SAVE_KEY = 'guildLegacy_v02_save';
+
   let currentScreen = 'guild';
   let currentDetailId = null;
   let expeditionView = null;
-
-  const freshState = () => ({
-    gold:1000, day:1, year:1, rep:0, missionsDone:0,
-    roster:[], selected:[], applicants:[], relations:{},
-    chronicle:['Día 1 · Se funda el Gremio del Grifo de Plata.']
-  });
-
-  let state = loadState() || freshState();
-  state.roster = Array.isArray(state.roster) ? state.roster : [];
-  state.selected = Array.isArray(state.selected) ? state.selected : [];
-  state.applicants = Array.isArray(state.applicants) ? state.applicants : [];
-  state.relations = state.relations || {};
-  state.chronicle = Array.isArray(state.chronicle) ? state.chronicle : [];
-  nextId = Math.max(1, ...state.roster.map(x=>x.id+1), ...state.applicants.map(x=>x.id+1));
+  let nextId = 1;
 
   const $ = id => document.getElementById(id);
-  const rand = arr => arr[Math.floor(Math.random()*arr.length)];
-  const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+  const rand = arr => arr[Math.floor(Math.random() * arr.length)];
+  const clamp = (v,a,b) => Math.max(a, Math.min(b,v));
   const oneIn = n => Math.random() < 1/n;
-  const threshold = level => 80 + level*40;
-  const member = id => state.roster.find(x=>x.id===id);
+  const threshold = level => 80 + level * 40;
   const pairKey = (a,b) => [a,b].sort((x,y)=>x-y).join('-');
+  const member = id => state.roster.find(x => x.id === id);
+  const activeMembers = () => state.roster.filter(h => h.alive !== false && !h.retired);
 
-  function saveState(showNotice=true){
-    try{
-      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-      if(showNotice) notice('Partida guardada en este navegador.');
-    }catch(err){
-      if(showNotice) notice('No fue posible guardar automáticamente en este navegador.');
+  function freshState(){
+    return {
+      version:1,
+      gold:1000,
+      day:1,
+      year:1,
+      rep:0,
+      missionsDone:0,
+      roster:[],
+      selected:[],
+      applicants:[],
+      relations:{},
+      chronicle:['Día 1 · Año 1 · Se funda el Gremio del Grifo de Plata.'],
+      facilities:{infirmary:0,tavern:0,training:0,library:0},
+      planning:{pace:'balanced',priority:'objective',supply:'none'},
+      children:[],
+      lastGuildEvent:'El gremio abre sus puertas por primera vez.',
+      regionNotices:['frontier']
+    };
+  }
+
+  function randomTraits(){
+    const traits=Object.keys(DATA.traits);
+    const first=rand(traits);
+    let second=rand(traits);
+    while(second===first) second=rand(traits);
+    return [first,second];
+  }
+
+  function randomMotivation(){
+    return rand(DATA.motivations).id;
+  }
+
+  function normalizeHero(raw, applicant=false){
+    const h={...raw};
+    h.id=Number(h.id)||nextId++;
+    h.name=h.name||rand(DATA.names);
+    h.cls=DATA.classes[h.cls]?h.cls:rand(Object.keys(DATA.classes));
+    h.traits=Array.isArray(h.traits)&&h.traits.length?h.traits.slice(0,2):randomTraits();
+    h.age=Number.isFinite(h.age)?h.age:18+Math.floor(Math.random()*18);
+    h.origin=h.origin||rand(DATA.origins);
+    h.motivation=h.motivation||randomMotivation();
+    h.generation=h.generation||1;
+    h.parentIds=Array.isArray(h.parentIds)?h.parentIds:[];
+    h.legacy=!!h.legacy;
+
+    if(applicant){
+      h.cost=Number.isFinite(h.cost)?h.cost:(h.legacy?60:120+Math.floor(Math.random()*81));
+      return h;
     }
+
+    h.level=h.level||1;
+    h.xp=h.xp||0;
+    h.expeditions=h.expeditions||0;
+    h.alive=h.alive!==false;
+    h.retired=!!h.retired;
+    h.specialization=h.specialization||null;
+    h.memory=Array.isArray(h.memory)?h.memory:[];
+    h.spouseId=h.spouseId||null;
+    h.children=Array.isArray(h.children)?h.children:[];
+    h.motivationProgress=h.motivationProgress||0;
+
+    if(typeof h.injury==='number' && h.injury>0){
+      const template=DATA.injuries[Math.min(DATA.injuries.length-1,Math.max(0,h.injury*2-1))];
+      h.injury={...template,daysLeft:template.days};
+    }else if(h.injury && typeof h.injury==='object'){
+      h.injury={...h.injury};
+      h.injury.daysLeft=Math.max(1,h.injury.daysLeft||h.injury.days||5);
+    }else{
+      h.injury=null;
+    }
+    return h;
+  }
+
+  function migrateLegacy(raw){
+    const base=freshState();
+    if(!raw) return base;
+    base.gold=raw.gold??base.gold;
+    base.day=raw.day??base.day;
+    base.year=raw.year??base.year;
+    base.rep=raw.rep??0;
+    base.missionsDone=raw.missionsDone??0;
+    base.relations=raw.relations||{};
+    base.chronicle=Array.isArray(raw.chronicle)?raw.chronicle:base.chronicle;
+    base.roster=(raw.roster||[]).map(h=>normalizeHero(h,false));
+    base.applicants=(raw.applicants||[]).map(h=>normalizeHero(h,true));
+    base.selected=(raw.selected||[]).filter(id=>base.roster.some(h=>h.id===id));
+    base.lastGuildEvent='La historia del gremio continúa desde una versión anterior.';
+    return base;
   }
 
   function loadState(){
     try{
-      const raw=localStorage.getItem(SAVE_KEY);
-      return raw?JSON.parse(raw):null;
-    }catch(err){return null;}
+      const v1=localStorage.getItem(SAVE_KEY);
+      if(v1) return JSON.parse(v1);
+      const old=localStorage.getItem(LEGACY_SAVE_KEY);
+      if(old) return migrateLegacy(JSON.parse(old));
+    }catch(err){}
+    return freshState();
+  }
+
+  let state=loadState();
+
+  function normalizeState(){
+    state={...freshState(),...state};
+    state.facilities={...freshState().facilities,...(state.facilities||{})};
+    state.planning={...freshState().planning,...(state.planning||{})};
+    state.relations=state.relations||{};
+    state.children=Array.isArray(state.children)?state.children:[];
+    state.chronicle=Array.isArray(state.chronicle)?state.chronicle:[];
+    state.regionNotices=Array.isArray(state.regionNotices)?state.regionNotices:['frontier'];
+    state.roster=(state.roster||[]).map(h=>normalizeHero(h,false));
+    state.applicants=(state.applicants||[]).map(h=>normalizeHero(h,true));
+    state.selected=(state.selected||[]).filter(id=>state.roster.some(h=>h.id===id && h.alive!==false && !h.retired));
+    nextId=Math.max(1,...state.roster.map(x=>x.id+1),...state.applicants.map(x=>x.id+1));
+  }
+  normalizeState();
+
+  function saveState(show=true){
+    try{
+      localStorage.setItem(SAVE_KEY,JSON.stringify(state));
+      if(show) notice('Partida guardada.');
+    }catch(err){
+      if(show) notice('No fue posible guardar en este navegador.');
+    }
   }
 
   function notice(text){
@@ -51,30 +152,38 @@
     if(el) el.textContent=text;
   }
 
-  function navigate(screen){
-    if(screen==='detail' && !currentDetailId){
-      screen='adventurers';
-    }
-    currentScreen=screen;
-    document.querySelectorAll('[data-screen-panel]').forEach(panel=>{
-      panel.classList.toggle('active',panel.dataset.screenPanel===screen);
-    });
-    document.querySelectorAll('button[data-screen]').forEach(btn=>{
-      const active=btn.dataset.screen===screen || (screen==='detail' && btn.dataset.screen==='adventurers');
-      btn.classList.toggle('active',active);
-    });
-    if(screen==='detail') renderDetail();
-    if(screen==='party') renderPartySummary();
-    if(screen==='mission') renderMission();
+  function addChronicle(text){
+    state.chronicle.unshift(`Día ${state.day} · Año ${state.year} · ${text}`);
+    state.chronicle=state.chronicle.slice(0,120);
+  }
+
+  function addMemory(hero,text){
+    if(!hero) return;
+    hero.memory=hero.memory||[];
+    hero.memory.unshift(`Año ${state.year}: ${text}`);
+    hero.memory=hero.memory.slice(0,20);
+  }
+
+  function motivationData(hero){
+    return DATA.motivations.find(m=>m.id===hero.motivation)||DATA.motivations[0];
+  }
+
+  function specializationData(hero){
+    if(!hero.specialization) return null;
+    return (DATA.specializations[hero.cls]||[]).find(s=>s.id===hero.specialization)||null;
   }
 
   function relation(a,b){
-    const k=pairKey(a,b);
-    if(!state.relations[k]) state.relations[k]={bond:0,tension:0,attraction:0,status:'Conocidos'};
-    return state.relations[k];
+    const key=pairKey(a,b);
+    if(!state.relations[key]){
+      state.relations[key]={bond:0,tension:0,attraction:0,status:'Conocidos',romance:false,married:false};
+    }
+    return state.relations[key];
   }
 
   function relationStatus(r){
+    if(r.married) return 'Matrimonio';
+    if(r.romance) return 'Pareja';
     if(r.tension>=45) return 'Rivales';
     if(r.attraction>=55 && r.bond>=45) return 'Atracción mutua';
     if(r.bond>=70) return 'Amigos íntimos';
@@ -84,33 +193,45 @@
   }
 
   function changeRelation(a,b,bond=0,tension=0,attraction=0){
+    if(a===b) return null;
     const r=relation(a,b);
-    r.bond=clamp(r.bond+bond,-50,100);
-    r.tension=clamp(r.tension+tension,0,100);
-    r.attraction=clamp(r.attraction+attraction,0,100);
+    r.bond=clamp((r.bond||0)+bond,-50,100);
+    r.tension=clamp((r.tension||0)+tension,0,100);
+    r.attraction=clamp((r.attraction||0)+attraction,0,100);
     r.status=relationStatus(r);
     return r;
   }
 
   function traitScore(hero,type){
-    return hero.traits.reduce((sum,t)=>sum+(DATA.traits[t]?.[type]||0),0);
+    return (hero.traits||[]).reduce((sum,t)=>sum+(DATA.traits[t]?.[type]||0),0);
   }
 
-  function makeApplicant(){
-    const classes=Object.keys(DATA.classes);
-    const traits=Object.keys(DATA.traits);
-    const cls=rand(classes);
-    const t1=rand(traits);
-    let t2=rand(traits);
-    while(t2===t1) t2=rand(traits);
-    return {
+  function heroPower(hero){
+    const base=DATA.classes[hero.cls]?.power||12;
+    const spec=specializationData(hero);
+    const injuryPenalty=hero.injury?.power||0;
+    return base + hero.level*3 + (spec?.power||0) + injuryPenalty + traitScore(hero,'risk');
+  }
+
+  function canDeploy(hero){
+    return hero && hero.alive!==false && !hero.retired && (!hero.injury || hero.injury.severity<3);
+  }
+
+  function makeApplicant(extra={}){
+    const cls=extra.cls&&DATA.classes[extra.cls]?extra.cls:rand(Object.keys(DATA.classes));
+    return normalizeHero({
       id:nextId++,
-      name:rand(DATA.names),
+      name:extra.name||rand(DATA.names),
       cls,
-      traits:[t1,t2],
-      age:18+Math.floor(Math.random()*18),
-      cost:120+Math.floor(Math.random()*81)
-    };
+      traits:extra.traits||randomTraits(),
+      age:extra.age??18+Math.floor(Math.random()*18),
+      origin:extra.origin||rand(DATA.origins),
+      motivation:extra.motivation||randomMotivation(),
+      cost:extra.cost,
+      legacy:!!extra.legacy,
+      generation:extra.generation||1,
+      parentIds:extra.parentIds||[]
+    },true);
   }
 
   function refillApplicants(){
@@ -120,8 +241,8 @@
   function recruit(id){
     const a=state.applicants.find(x=>x.id===id);
     if(!a) return;
-    if(state.roster.filter(x=>x.alive!==false).length>=10){
-      notice('El gremio admite un máximo de 10 miembros en esta versión.');
+    if(activeMembers().length>=12){
+      notice('El roster activo admite un máximo de 12 aventureros.');
       return;
     }
     if(state.gold<a.cost){
@@ -129,17 +250,28 @@
       return;
     }
     state.gold-=a.cost;
-    state.roster.push({...a,level:1,xp:0,injury:0,expeditions:0,alive:true});
+    const h=normalizeHero({...a,level:1,xp:0,expeditions:0,alive:true,retired:false,memory:[]},false);
+    if(a.legacy){
+      addMemory(h,'entró al gremio siguiendo el legado de su familia.');
+    }
+    state.roster.push(h);
     state.applicants=state.applicants.filter(x=>x.id!==id);
     refillApplicants();
-    state.chronicle.unshift(`Día ${state.day} · ${a.name}, ${a.cls}, se une al gremio.`);
+    addChronicle(`${h.name}, ${h.cls}, se une al gremio${h.legacy?' como descendiente de una familia del gremio':''}.`);
     saveState(false);
     renderAll();
-    notice(`${a.name} se ha unido al gremio.`);
+    notice(`${h.name} se ha unido al gremio.`);
   }
 
   function toggleParty(id,on){
+    const h=member(id);
+    if(!h) return false;
     if(on){
+      if(!canDeploy(h)){
+        notice(h.injury?.severity>=3?`${h.name} necesita recuperarse antes de salir.`:`${h.name} no está disponible.`);
+        renderRoster();
+        return false;
+      }
       if(state.selected.length>=4){
         notice('La party admite un máximo de 4 aventureros.');
         renderRoster();
@@ -150,10 +282,10 @@
       state.selected=state.selected.filter(x=>x!==id);
     }
     saveState(false);
+    renderHeader();
     renderRoster();
     renderPartySummary();
     renderMissionParty();
-    renderHeader();
     if(currentScreen==='detail') renderDetail();
     return true;
   }
@@ -162,192 +294,501 @@
     let bonus=0;
     const notes=[];
     const classes=party.map(x=>x.cls);
-
     if((classes.includes('Guerrero')||classes.includes('Paladin'))&&classes.includes('Sacerdotisa')){
       bonus+=9; notes.push('Protección + curación');
     }
-    if(classes.includes('Picaro')){bonus+=4;notes.push('Detección de trampas');}
-    if(classes.includes('Arquera')){bonus+=3;notes.push('Exploración');}
-    if(classes.includes('Maga')){bonus+=4;notes.push('Daño mágico');}
-
+    if(classes.includes('Picaro')){bonus+=4;notes.push('Trampas y rutas');}
+    if(classes.includes('Arquera')){bonus+=3;notes.push('Rastreo');}
+    if(classes.includes('Maga')){bonus+=4;notes.push('Soporte arcano');}
+    const lib=state.facilities.library||0;
+    if(lib && party.some(h=>h.cls==='Maga'||h.cls==='Sacerdotisa')){
+      bonus+=lib*2;
+      notes.push(`Biblioteca Nv.${lib}`);
+    }
     for(let i=0;i<party.length;i++){
       for(let j=i+1;j<party.length;j++){
         const r=relation(party[i].id,party[j].id);
         bonus+=(r.bond-r.tension)*0.04;
+        if(r.married||r.romance) bonus+=2;
       }
     }
     return {bonus,notes};
   }
 
-  function chooseRescuer(party,target){
-    const options=party.filter(x=>x.id!==target.id);
-    return options.sort((a,b)=>{
-      const ra=relation(a.id,target.id);
-      const rb=relation(b.id,target.id);
-      return (rb.bond+traitScore(b,'social')*6)-(ra.bond+traitScore(a,'social')*6);
-    })[0]||rand(options);
+  function partyChemistry(party){
+    if(party.length<2) return {label:'Sin datos',score:0,detail:'Necesitas al menos dos miembros.'};
+    let total=0,pairs=0,romance=0,rivalry=0;
+    for(let i=0;i<party.length;i++){
+      for(let j=i+1;j<party.length;j++){
+        const r=relation(party[i].id,party[j].id);
+        total+=r.bond-r.tension;
+        pairs++;
+        if(r.romance||r.married) romance++;
+        if(r.tension>=45) rivalry++;
+      }
+    }
+    const score=Math.round(total/Math.max(1,pairs));
+    let label='Neutral';
+    if(score>=55) label='Confianza excepcional';
+    else if(score>=30) label='Buena química';
+    else if(score>=10) label='Compañerismo';
+    else if(score<=-20) label='Tensión fuerte';
+    else if(score<0) label='Tensión leve';
+    return {label,score,detail:`${romance?romance+' vínculo cercano · ':''}${rivalry?rivalry+' rivalidad · ':''}Cohesión ${score>=0?'+':''}${score}`};
   }
 
-  function addStageEffect(stage,text,kind=''){
-    if(!stage) return;
-    stage.effects.push({text,kind});
+  function createInjury(hero,difficulty,failed=false){
+    const current=hero.injury;
+    let severity=1;
+    const roll=Math.random();
+    if(difficulty>=4 && roll<0.22) severity=3;
+    else if(difficulty>=3 && roll<0.5) severity=2;
+    else if(failed && roll<0.58) severity=2;
+    const pool=DATA.injuries.filter(i=>i.severity===severity);
+    const template={...rand(pool.length?pool:DATA.injuries)};
+    const infirmary=state.facilities.infirmary||0;
+    template.daysLeft=Math.max(2,template.days-infirmary*2);
+    if(!current || template.severity>=current.severity){
+      hero.injury=template;
+    }else{
+      hero.injury.daysLeft+=Math.max(1,Math.floor(template.daysLeft/2));
+    }
+    addMemory(hero,`sufrió ${hero.injury.name.toLowerCase()} durante una expedición.`);
+    return hero.injury;
+  }
+
+  function recoverDays(days){
+    activeMembers().forEach(h=>{
+      if(!h.injury) return;
+      h.injury.daysLeft-=days;
+      if(h.injury.daysLeft<=0){
+        const name=h.injury.name;
+        h.injury=null;
+        addMemory(h,`se recuperó de ${name.toLowerCase()}.`);
+        addChronicle(`${h.name} se recupera de ${name.toLowerCase()} y vuelve a estar disponible.`);
+      }
+    });
+  }
+
+  function triggerGuildLifeEvent(force=false){
+    if(activeMembers().length<2) return null;
+    if(!force && Math.random()>0.38) return null;
+    const e=rand(DATA.guildLifeEvents);
+    const heroes=activeMembers();
+    let text=e.text;
+
+    if(e.gold){
+      state.gold=Math.max(0,state.gold+e.gold);
+      text+=` ${e.gold>0?'+':''}${e.gold} oro.`;
+    }
+    if(e.rep){
+      state.rep=Math.max(0,state.rep+e.rep);
+      text+=` Reputación ${e.rep>0?'+':''}${e.rep}.`;
+    }
+    if(e.xp){
+      const h=rand(heroes);
+      h.xp+=e.xp;
+      text+=` ${h.name} gana ${e.xp} XP.`;
+      levelHeroIfNeeded(h);
+    }
+    if(e.bond && heroes.length>=2){
+      const a=rand(heroes);
+      let b=rand(heroes.filter(x=>x.id!==a.id));
+      changeRelation(a.id,b.id,e.bond,0,Math.random()<0.12?1:0);
+      text+=` ${a.name} y ${b.name} estrechan su vínculo.`;
+    }
+    state.lastGuildEvent=`${e.title}: ${text}`;
+    addChronicle(`${e.title}. ${text}`);
+    return e;
+  }
+
+  function processYearChange(){
+    state.roster.forEach(h=>{
+      if(h.alive!==false) h.age=(h.age||18)+1;
+    });
+
+    state.children.forEach(child=>{
+      child.age=(child.age||0)+1;
+      if(child.age>=16 && !child.introduced){
+        child.introduced=true;
+        const inheritedClass=rand(child.classAffinity||Object.keys(DATA.classes));
+        state.applicants.push(makeApplicant({
+          name:child.name,
+          cls:inheritedClass,
+          traits:child.traits,
+          age:16,
+          origin:'Familia del Gremio del Grifo',
+          motivation:child.motivation,
+          cost:60,
+          legacy:true,
+          generation:child.generation,
+          parentIds:child.parentIds
+        }));
+        addChronicle(`${child.name}, descendiente del gremio, alcanza edad para presentarse como aspirante.`);
+      }
+    });
+
+    state.roster.filter(h=>h.alive!==false&&!h.retired&&h.age>=55).forEach(h=>retireHero(h,false));
+    processRelationships(true);
+    processFamilyGrowth();
+    checkRegionUnlocks();
+  }
+
+  function advanceDays(days,{guildEvent=false}={}){
+    recoverDays(days);
+    let remaining=days;
+    while(remaining>0){
+      const toYear=91-state.day;
+      if(remaining>=toYear){
+        state.day=1;
+        remaining-=toYear;
+        state.year++;
+        processYearChange();
+      }else{
+        state.day+=remaining;
+        remaining=0;
+      }
+    }
+    if(guildEvent) triggerGuildLifeEvent(true);
+    checkRegionUnlocks();
+    saveState(false);
+  }
+
+  function advanceWeek(){
+    advanceDays(7,{guildEvent:true});
+    renderAll();
+    notice('Pasó una semana en el gremio.');
+  }
+
+  function advanceYear(){
+    advanceDays(90,{guildEvent:true});
+    triggerGuildLifeEvent(true);
+    renderAll();
+    notice('Ha pasado un año de vida en el gremio.');
+  }
+
+  function levelHeroIfNeeded(hero){
+    let leveled=false;
+    while(hero.xp>=threshold(hero.level)){
+      hero.xp-=threshold(hero.level);
+      hero.level++;
+      leveled=true;
+      addMemory(hero,`alcanzó el nivel ${hero.level}.`);
+      addChronicle(`${hero.name} alcanza el nivel ${hero.level}.`);
+    }
+    return leveled;
+  }
+
+  function chooseSpecialization(hero,specId){
+    if(!hero || hero.level<4 || hero.specialization) return;
+    const spec=(DATA.specializations[hero.cls]||[]).find(s=>s.id===specId);
+    if(!spec) return;
+    hero.specialization=spec.id;
+    addMemory(hero,`se especializó como ${spec.name}.`);
+    addChronicle(`${hero.name} adopta la especialización ${spec.name}.`);
+    saveState(false);
+    renderAll();
+    notice(`${hero.name} ahora es ${spec.name}.`);
+  }
+
+  function retireHero(hero,voluntary=true){
+    if(!hero || hero.retired || hero.alive===false) return;
+    if(voluntary && !(hero.age>=45 || (hero.level>=6 && hero.expeditions>=10))){
+      notice('Todavía no está listo para retirarse.');
+      return;
+    }
+    hero.retired=true;
+    state.selected=state.selected.filter(id=>id!==hero.id);
+    addMemory(hero,'dejó las expediciones y pasó a ser veterano del gremio.');
+    addChronicle(`${hero.name} se retira de la vida de aventurero y queda como veterano del gremio.`);
+    saveState(false);
+    renderAll();
+    navigate('legacy');
+  }
+
+  function processRelationships(yearly=false){
+    const entries=Object.entries(state.relations);
+    entries.forEach(([key,r])=>{
+      const [aId,bId]=key.split('-').map(Number);
+      const a=member(aId),b=member(bId);
+      if(!a||!b||a.alive===false||b.alive===false) return;
+
+      if(!r.romance && !r.married && r.attraction>=55 && r.bond>=45 && Math.random()<(yearly?0.5:0.18)){
+        r.romance=true;
+        r.status='Pareja';
+        a.spouseId=b.id;
+        b.spouseId=a.id;
+        addChronicle(`${a.name} y ${b.name} deciden comenzar una relación.`);
+        addMemory(a,`comenzó una relación con ${b.name}.`);
+        addMemory(b,`comenzó una relación con ${a.name}.`);
+      }else if(r.romance && !r.married && r.bond>=70 && r.attraction>=60 && Math.random()<(yearly?0.45:0.12)){
+        r.married=true;
+        r.status='Matrimonio';
+        a.spouseId=b.id;
+        b.spouseId=a.id;
+        addChronicle(`${a.name} y ${b.name} celebran su unión junto al gremio.`);
+        addMemory(a,`formó una familia con ${b.name}.`);
+        addMemory(b,`formó una familia con ${a.name}.`);
+      }
+    });
+  }
+
+  function createChild(a,b){
+    const inherited=[];
+    inherited.push(rand(a.traits||randomTraits()));
+    const second=rand(b.traits||randomTraits());
+    if(!inherited.includes(second)) inherited.push(second);
+    else{
+      const pool=Object.keys(DATA.traits).filter(t=>!inherited.includes(t));
+      inherited.push(rand(pool));
+    }
+    const child={
+      id:`child-${Date.now()}-${Math.floor(Math.random()*9999)}`,
+      name:rand(DATA.names),
+      age:0,
+      parentIds:[a.id,b.id],
+      traits:inherited,
+      motivation:Math.random()<0.5?a.motivation:b.motivation,
+      classAffinity:[a.cls,b.cls],
+      generation:Math.max(a.generation||1,b.generation||1)+1,
+      introduced:false
+    };
+    state.children.push(child);
+    a.children=a.children||[];
+    b.children=b.children||[];
+    a.children.push(child.id);
+    b.children.push(child.id);
+    addChronicle(`${a.name} y ${b.name} reciben a ${child.name} en su familia.`);
+    addMemory(a,`${child.name} pasó a formar parte de su familia.`);
+    addMemory(b,`${child.name} pasó a formar parte de su familia.`);
+    return child;
+  }
+
+  function processFamilyGrowth(){
+    const handled=new Set();
+    Object.entries(state.relations).forEach(([key,r])=>{
+      if(!r.married) return;
+      const [aId,bId]=key.split('-').map(Number);
+      if(handled.has(key)) return;
+      handled.add(key);
+      const a=member(aId),b=member(bId);
+      if(!a||!b||a.alive===false||b.alive===false) return;
+      const existing=state.children.filter(c=>c.parentIds.includes(a.id)&&c.parentIds.includes(b.id));
+      if(existing.length>=3) return;
+      if(Math.random()<0.35) createChild(a,b);
+    });
+  }
+
+  function checkRegionUnlocks(){
+    DATA.regions.forEach(region=>{
+      if(state.rep>=region.rep && !state.regionNotices.includes(region.id)){
+        state.regionNotices.push(region.id);
+        addChronicle(`La reputación del gremio abre contratos en ${region.name}.`);
+      }
+    });
+  }
+
+  function unlockedMissions(){
+    return DATA.missions.filter(m=>{
+      const region=DATA.regions.find(r=>r.id===m.region);
+      return !region || state.rep>=region.rep;
+    });
+  }
+
+  function upgradeFacility(key){
+    const info=DATA.facilities[key];
+    if(!info) return;
+    const level=state.facilities[key]||0;
+    if(level>=3){notice('Esta instalación ya está al máximo.');return;}
+    const cost=info.costs[level];
+    if(state.gold<cost){notice(`Necesitas ${cost} oro.`);return;}
+    state.gold-=cost;
+    state.facilities[key]=level+1;
+    addChronicle(`${info.name} mejora a nivel ${level+1}.`);
+    saveState(false);
+    renderAll();
+    notice(`${info.name} mejorada.`);
+  }
+
+  function planningModifiers(){
+    const pace=DATA.planning.pace[state.planning.pace];
+    const priority=DATA.planning.priority[state.planning.priority];
+    const supply=DATA.planning.supplies[state.planning.supply];
+    return {
+      pace,priority,supply,
+      chance:(pace.chance||0)+(priority.chance||0)+(supply.chance||0),
+      injury:(pace.injury||0)+(priority.injury||0)+(supply.injury||0),
+      reward:1+(pace.reward||0)+(priority.reward||0),
+      treasure:priority.treasure||0,
+      cost:supply.cost||0,
+      days:pace.days||0
+    };
   }
 
   function stageFlavor(type){
-    const pool=DATA.expeditionEvents?.[type]||[];
+    const pool=DATA.expeditionEvents[type]||[];
     return pool.length?rand(pool):null;
   }
 
   function applyFlavor(stage,type,lines){
-    const event=stageFlavor(type);
-    if(!event) return;
-    stage.icon=event.icon||stage.icon;
-    stage.title=event.title||stage.title;
-    stage.text=event.text||stage.text;
-    lines.push(`<p><b>${event.title}</b> · ${event.text}</p>`);
+    const e=stageFlavor(type);
+    if(!e) return;
+    stage.icon=e.icon;
+    stage.title=e.title;
+    stage.text=e.text;
+    lines.push(`<p><b>${e.title}</b> · ${e.text}</p>`);
+  }
+
+  function addStageEffect(stage,text,kind=''){
+    stage.effects.push({text,kind});
   }
 
   function applyClassMoment(party,stage,lines){
-    const eligible=party.filter(h=>DATA.expeditionEvents?.classMoments?.[h.cls]?.length);
-    if(!eligible.length || Math.random()>0.78) return;
+    const eligible=party.filter(h=>DATA.classMoments[h.cls]?.length);
+    if(!eligible.length||Math.random()>0.78) return;
     const hero=rand(eligible);
-    const moment=rand(DATA.expeditionEvents.classMoments[hero.cls]);
-    const text=`${hero.name} ${moment}.`;
+    const text=`${hero.name} ${rand(DATA.classMoments[hero.cls])}.`;
     stage.icon=DATA.classes[hero.cls].icon;
     stage.title=`${hero.name} toma la iniciativa`;
     stage.text=text;
-    addStageEffect(stage,`${hero.cls} · ${DATA.classes[hero.cls].ability}`,'good');
+    addStageEffect(stage,`${hero.cls} · ${specializationData(hero)?.name||DATA.classes[hero.cls].role}`,'good');
     lines.push(`<p class="event"><b>Momento de clase:</b> ${text}</p>`);
   }
 
   function applyTraitMoment(party,stage,lines,extras){
     const actor=rand(party);
-    const target=rand(party.filter(h=>h.id!==actor.id));
-    if(!actor || !target) return;
+    const others=party.filter(h=>h.id!==actor.id);
+    const target=others.length?rand(others):null;
+    if(!actor||!target) return;
     const traits=actor.traits||[];
 
-    if(traits.includes('Curioso') && Math.random()<0.55){
-      const bonus=12+Math.floor(Math.random()*19);
+    if(traits.includes('Curioso')&&Math.random()<0.55){
+      const bonus=12+Math.floor(Math.random()*24);
       extras.bonusGold+=bonus;
-      const text=`${actor.name} insiste en revisar un rincón que el resto habría pasado por alto y encuentra un pequeño escondite.`;
-      stage.text=text;
-      addStageEffect(stage,`Hallazgo: +${bonus} oro`,'good');
-      lines.push(`<p class="event"><b>Curiosidad:</b> ${text}</p>`);
-      return;
-    }
-
-    if(traits.includes('Bromista') && Math.random()<0.55){
-      changeRelation(actor.id,target.id,4,0,0);
-      const text=`${actor.name} consigue relajar a ${target.name} con una historia exagerada sobre una vieja aventura.`;
-      stage.text=text;
+      stage.text=`${actor.name} revisa un rincón que el resto habría pasado por alto y encuentra un escondite.`;
+      addStageEffect(stage,`Hallazgo +${bonus} oro`,'good');
+      lines.push(`<p class="event"><b>Curiosidad:</b> ${stage.text}</p>`);
+    }else if(traits.includes('Bromista')&&Math.random()<0.55){
+      changeRelation(actor.id,target.id,4,0,Math.random()<0.15?1:0);
+      stage.text=`${actor.name} consigue relajar a ${target.name} con una historia exagerada.`;
       addStageEffect(stage,`${actor.name} ↔ ${target.name} · Bond +4`,'bond');
-      lines.push(`<p class="event"><b>Buen ánimo:</b> ${text}</p>`);
-      return;
-    }
-
-    if((traits.includes('Leal')||traits.includes('Compasivo')) && Math.random()<0.5){
-      changeRelation(actor.id,target.id,4,0,0);
-      const text=`${actor.name} se asegura de que ${target.name} esté bien antes de pensar en descansar.`;
-      stage.text=text;
+      lines.push(`<p class="event"><b>Buen ánimo:</b> ${stage.text}</p>`);
+    }else if((traits.includes('Leal')||traits.includes('Compasivo'))&&Math.random()<0.5){
+      changeRelation(actor.id,target.id,4,0,Math.random()<0.12?1:0);
+      stage.text=`${actor.name} se asegura de que ${target.name} esté bien antes de descansar.`;
       addStageEffect(stage,`${actor.name} ↔ ${target.name} · Bond +4`,'bond');
-      lines.push(`<p class="event"><b>Compañerismo:</b> ${text}</p>`);
-      return;
-    }
-
-    if(traits.includes('Codicioso') && Math.random()<0.45){
-      const bonus=15+Math.floor(Math.random()*21);
+      lines.push(`<p class="event"><b>Compañerismo:</b> ${stage.text}</p>`);
+    }else if(traits.includes('Codicioso')&&Math.random()<0.45){
+      const bonus=15+Math.floor(Math.random()*26);
       extras.bonusGold+=bonus;
       changeRelation(actor.id,target.id,-2,4,0);
-      const text=`${actor.name} encuentra unas monedas y tarda demasiado en decidir si debía compartirlas con el grupo.`;
-      stage.text=text;
+      stage.text=`${actor.name} encuentra unas monedas y tarda demasiado en decidir si debía compartirlas.`;
       addStageEffect(stage,`+${bonus} oro`,'good');
       addStageEffect(stage,`${actor.name} ↔ ${target.name} · Tensión +4`,'bad');
-      lines.push(`<p class="event"><b>Tentación:</b> ${text}</p>`);
+      lines.push(`<p class="event"><b>Tentación:</b> ${stage.text}</p>`);
     }
-  }
-
-  function setEncounterFlavor(mission,stage){
-    const foes=DATA.expeditionEvents?.encounters?.[mission.id]||[];
-    if(!foes.length) return;
-    const foe=rand(foes);
-    stage.title=`Encuentro: ${foe}`;
-    stage.text=`La party se topa con ${foe}. Cada miembro reacciona según su experiencia y personalidad.`;
   }
 
   function personalityEvent(party,lines,stage){
     const actor=rand(party);
-    const target=rand(party.filter(x=>x.id!==actor.id));
-    if(!target) return;
-
+    const targets=party.filter(x=>x.id!==actor.id);
+    if(!targets.length) return;
+    const target=rand(targets);
     let bond=0,tension=0,attraction=0,text='';
-    const t=actor.traits;
+    const t=actor.traits||[];
 
     if(t.includes('Protector')||t.includes('Leal')||t.includes('Compasivo')){
-      text=`${actor.name} vio a ${target.name} en peligro y abandonó su posición para protegerle.`;
+      text=`${actor.name} dedica parte del descanso a ayudar a ${target.name}.`;
       bond=7; attraction=oneIn(4)?3:0;
     }else if(t.includes('Impulsivo')){
-      text=`${actor.name} cargó sin esperar al resto. ${target.name} tuvo que intervenir para evitar un desastre.`;
-      bond=1; tension=7;
-    }else if(t.includes('Codicioso')){
-      text=`${actor.name} encontró una bolsa de monedas y trató de ocultarla. ${target.name} se dio cuenta.`;
-      bond=-3; tension=9;
+      text=`${actor.name} insiste en que habrían podido avanzar más rápido. ${target.name} no está de acuerdo.`;
+      bond=1;tension=6;
     }else if(t.includes('Bromista')){
-      text=`Durante el campamento, ${actor.name} logró hacer reír a ${target.name} después de un día difícil.`;
-      bond=6; attraction=oneIn(5)?4:0;
-    }else if(t.includes('Curioso')){
-      text=`${actor.name} insistió en investigar un pasaje oculto. ${target.name} decidió acompañarle.`;
-      bond=4; tension=oneIn(5)?3:0;
+      text=`${actor.name} hace reír a ${target.name} después de un día difícil.`;
+      bond=6;attraction=oneIn(5)?3:0;
     }else if(t.includes('Ambicioso')){
-      text=`${actor.name} intentó quedarse con el mérito de una victoria que ${target.name} consideraba compartida.`;
-      tension=6;
+      text=`${actor.name} habla de la gloria que traerá la misión; ${target.name} le recuerda que fue un esfuerzo de todos.`;
+      tension=4;
     }else{
-      text=`${actor.name} y ${target.name} compartieron una larga guardia y hablaron sobre sus vidas antes del gremio.`;
-      bond=5; attraction=oneIn(6)?4:0;
+      text=`${actor.name} y ${target.name} comparten una guardia tranquila y hablan de su vida antes del gremio.`;
+      bond=5;attraction=oneIn(6)?3:0;
     }
 
     const before=relation(actor.id,target.id).status;
     const r=changeRelation(actor.id,target.id,bond,tension,attraction);
-    lines.push(`<p class="event"><b>Evento:</b> ${text}</p>`);
-
-    if(stage) stage.text=text;
+    stage.text=text;
     if(bond) addStageEffect(stage,`${actor.name} ↔ ${target.name} · Bond ${bond>0?'+':''}${bond}`,'bond');
     if(tension) addStageEffect(stage,`${actor.name} ↔ ${target.name} · Tensión +${tension}`,'bad');
     if(attraction) addStageEffect(stage,`${actor.name} ↔ ${target.name} · Afinidad +${attraction}`,'bond');
-
-    if(before!==r.status){
-      lines.push(`<p>Relación: ${actor.name} ↔ ${target.name} ahora son <b>${r.status}</b>.</p>`);
-      addStageEffect(stage,`Nueva relación: ${r.status}`,'good');
-    }
+    lines.push(`<p class="event"><b>Campamento:</b> ${text}</p>`);
+    if(before!==r.status) addStageEffect(stage,`Relación: ${r.status}`,'good');
   }
 
-  function combatEvent(party,success,lines,stage){
+  function chooseRescuer(party,target){
+    const options=party.filter(x=>x.id!==target.id);
+    return options.sort((a,b)=>{
+      const ra=relation(a.id,target.id),rb=relation(b.id,target.id);
+      return (rb.bond+traitScore(b,'social')*6)-(ra.bond+traitScore(a,'social')*6);
+    })[0]||rand(options);
+  }
+
+  function combatEvent(party,mission,success,lines,stage,injuryMod){
+    const pool=DATA.encounterPools[mission.type]||DATA.encounterPools.combat;
+    const foe=rand(pool);
+    stage.title=`Encuentro: ${foe}`;
+    stage.text=`La party se topa con ${foe}. Cada miembro reacciona según su experiencia.`;
+
     const endangered=rand(party);
     const rescuer=chooseRescuer(party,endangered);
-    if(!rescuer) return;
-
-    const drive=traitScore(rescuer,'social')+relation(rescuer.id,endangered.id).bond/15;
-    if(drive>=3 || rescuer.cls==='Paladin' || rescuer.cls==='Guerrero'){
-      const text=`${rescuer.name} utilizó ${DATA.classes[rescuer.cls].ability} cuando ${endangered.name} quedó en peligro.`;
-      lines.push(`<p>${DATA.classes[rescuer.cls].icon} ${rescuer.name} utilizó <b>${DATA.classes[rescuer.cls].ability}</b> cuando ${endangered.name} quedó en peligro.</p>`);
-      changeRelation(rescuer.id,endangered.id,6,0,oneIn(6)?3:0);
-      if(stage) stage.text=text;
-      addStageEffect(stage,`${rescuer.name} ↔ ${endangered.name} · Bond +6`,'bond');
-      if(!success && Math.random()<0.45){
-        rescuer.injury=clamp(rescuer.injury+1,0,3);
-        addStageEffect(stage,`${rescuer.name} resulta herido`,'bad');
+    if(rescuer){
+      const rel=relation(rescuer.id,endangered.id);
+      if(traitScore(rescuer,'social')+rel.bond/15>=3 || ['Paladin','Guerrero'].includes(rescuer.cls)){
+        changeRelation(rescuer.id,endangered.id,6,0,oneIn(7)?2:0);
+        addStageEffect(stage,`${rescuer.name} protege a ${endangered.name}`,'bond');
+        lines.push(`<p>${DATA.classes[rescuer.cls].icon} ${rescuer.name} interviene cuando ${endangered.name} queda en peligro.</p>`);
       }
-    }else{
-      const text=`${endangered.name} quedó aislado durante el combate y el grupo tardó en reaccionar.`;
-      lines.push(`<p>${text}</p>`);
-      endangered.injury=clamp(endangered.injury+1,0,3);
-      if(stage) stage.text=text;
-      addStageEffect(stage,`${endangered.name} resulta herido`,'bad');
     }
+
+    const dangerBase=(success?0.07:0.18)+mission.difficulty*0.025+injuryMod;
+    party.forEach(h=>{
+      if(Math.random()<Math.max(0.02,dangerBase+traitScore(h,'risk')*0.01)){
+        const injury=createInjury(h,mission.difficulty,!success);
+        addStageEffect(stage,`${h.name}: ${injury.name}`,'bad');
+      }
+    });
+
+    addStageEffect(stage,success?'Objetivo asegurado':'Retirada organizada',success?'good':'bad');
+  }
+
+  function applyMotivationProgress(hero,mission,success){
+    if(!success) return false;
+    const id=hero.motivation;
+    let match=false;
+    if(id==='protect' && ['Paladin','Guerrero','Sacerdotisa'].includes(hero.cls)) match=true;
+    if(id==='glory' && mission.difficulty>=3) match=true;
+    if(id==='knowledge' && ['exploration','arcane','undead','legendary'].includes(mission.type)) match=true;
+    if(id==='family' && mission.reward>=400) match=true;
+    if(id==='wealth' && state.planning.priority==='treasure') match=true;
+    if(id==='mastery') match=true;
+    if(!match) return false;
+
+    hero.motivationProgress=(hero.motivationProgress||0)+1;
+    if(hero.motivationProgress>=3){
+      hero.motivationProgress=0;
+      hero.xp+=20;
+      addMemory(hero,`alcanzó un hito personal relacionado con “${motivationData(hero).name}”.`);
+      addChronicle(`${hero.name} alcanza un importante objetivo personal.`);
+      return true;
+    }
+    return false;
   }
 
   function setExpeditionControls(running){
     $('dispatchBtn').disabled=running;
     $('missionSelect').disabled=running;
+    $('paceSelect').disabled=running;
+    $('prioritySelect').disabled=running;
+    $('supplySelect').disabled=running;
     document.querySelectorAll('.main-nav .nav-btn').forEach(btn=>btn.disabled=running);
   }
 
@@ -358,7 +799,6 @@
   function renderExpeditionStage(){
     if(!expeditionView) return;
     const stage=expeditionView.stages[expeditionView.index];
-
     $('expeditionTheater').classList.add('running');
     $('expeditionTheater').classList.remove('complete');
     $('expeditionTitle').textContent=expeditionView.mission.name;
@@ -374,41 +814,34 @@
     $('expeditionStageTitle').textContent=stage.title;
     $('expeditionStageText').textContent=stage.text;
     $('expeditionStageEffects').innerHTML=stage.effects.map(e=>`<span class="effect-chip ${e.kind||''}">${e.text}</span>`).join('');
-
     $('expeditionSummary').classList.add('is-hidden');
     $('expeditionContinueBtn').classList.remove('is-hidden');
     $('toggleReportBtn').classList.add('is-hidden');
     $('report').classList.add('is-hidden');
     $('reportActions').classList.add('is-hidden');
-    $('expeditionContinueBtn').textContent=expeditionView.index===expeditionView.stages.length-1?'Ver resumen →':'Continuar →';
+    $('expeditionContinueBtn').textContent=expeditionView.index===4?'Ver resumen →':'Continuar →';
   }
 
   function finishExpeditionPresentation(){
     if(!expeditionView) return;
-
     document.querySelectorAll('.exp-step').forEach(el=>{
       el.classList.remove('active');
       el.classList.add('done');
     });
-
     $('expeditionTheater').classList.remove('running');
     $('expeditionTheater').classList.add('complete');
     $('expeditionStageIcon').textContent=expeditionView.success?'🏆':'🏠';
     $('expeditionStageLabel').textContent='EXPEDICIÓN COMPLETA';
     $('expeditionStageTitle').textContent=expeditionView.success?'La party regresa victoriosa':'La party consigue regresar';
     $('expeditionStageText').textContent=expeditionView.success
-      ? 'La misión ha terminado. Revisa cómo cambió cada aventurero.'
-      : 'No lograron el objetivo, pero la historia del grupo continúa.';
+      ?'El contrato terminó. Revisa cómo cambió el grupo.'
+      :'No lograron el objetivo, pero el gremio tendrá otra oportunidad.';
     $('expeditionStageEffects').innerHTML='';
-
     $('expeditionSummary').innerHTML=expeditionView.summary.map(item=>`
       <div class="summary-card ${item.kind||''}">
-        <strong>${item.title}</strong>
-        ${item.text}
-      </div>
-    `).join('');
+        <strong>${item.title}</strong>${item.text}
+      </div>`).join('');
     $('expeditionSummary').classList.remove('is-hidden');
-
     $('expeditionContinueBtn').classList.add('is-hidden');
     $('toggleReportBtn').classList.remove('is-hidden');
     $('reportActions').classList.remove('is-hidden');
@@ -417,304 +850,252 @@
 
   function advanceExpedition(){
     if(!expeditionView) return;
-    if(expeditionView.index<expeditionView.stages.length-1){
+    if(expeditionView.index<4){
       expeditionView.index++;
       renderExpeditionStage();
-    }else{
-      finishExpeditionPresentation();
-    }
+    }else finishExpeditionPresentation();
   }
 
   function dispatch(){
-    const party=state.selected.map(member).filter(x=>x&&x.alive!==false);
-    if(party.length<2){
-      notice('Necesitas al menos 2 aventureros.');
-      return;
-    }
+    const party=state.selected.map(member).filter(canDeploy);
+    if(party.length<2){notice('Necesitas al menos 2 aventureros disponibles.');return;}
 
-    const mission=DATA.missions.find(x=>x.id===$('missionSelect').value)||DATA.missions[0];
+    const mission=DATA.missions.find(m=>m.id===$('missionSelect').value);
+    if(!mission){notice('Selecciona un contrato disponible.');return;}
+
+    const plan=planningModifiers();
+    if(state.gold<plan.cost){notice(`Necesitas ${plan.cost} oro para esos suministros.`);return;}
+    state.gold-=plan.cost;
+
     const syn=partySynergy(party);
-    const rawPower=party.reduce((sum,h)=>sum+DATA.classes[h.cls].power+h.level*3-h.injury*5+traitScore(h,'risk'),0)+syn.bonus;
+    const chemistry=partyChemistry(party);
+    const libBonus=(state.facilities.library||0)*0.015;
+    const rawPower=party.reduce((sum,h)=>sum+heroPower(h),0)+syn.bonus;
     const target=mission.difficulty*25+party.length*8;
-    const chance=clamp(0.46+(rawPower-target)/100,0.15,0.93);
+    const chance=clamp(0.46+(rawPower-target)/100+plan.chance+libBonus,0.12,0.95);
     const success=Math.random()<chance;
+    const days=Math.max(1,mission.days+plan.days);
+    const extras={bonusGold:0};
     const lines=[];
     const heroResults=[];
-    const extras={bonusGold:0};
 
     const stages=[
-      {
-        icon:'🗺️',label:'ETAPA 1 · VIAJE',title:`Rumbo a ${mission.name}`,
-        text:`${party.map(x=>x.name).join(', ')} dejan atrás el gremio y comienzan un viaje de ${mission.days} días.`,
-        effects:[{text:`Destino: ${mission.name}`,kind:''},{text:`Éxito estimado: ${Math.round(chance*100)}%`,kind:''}]
-      },
-      {
-        icon:'🔎',label:'ETAPA 2 · EXPLORACIÓN',title:'El grupo se interna en la zona',
-        text:'El camino obliga a la party a tomar decisiones y depender unos de otros.',
-        effects:[]
-      },
-      {
-        icon:'⚔️',label:'ETAPA 3 · ENCUENTRO',title:'Algo bloquea el camino',
-        text:'La party debe resolver el momento más peligroso de la expedición.',
-        effects:[]
-      },
-      {
-        icon:'🔥',label:'ETAPA 4 · CAMPAMENTO',title:'Tiempo para descansar',
-        text:'Después del peligro, el grupo comparte un momento lejos del gremio.',
-        effects:[]
-      },
-      {
-        icon:'🏰',label:'ETAPA 5 · REGRESO',title:'De vuelta al Grifo de Plata',
-        text:'El gremio espera noticias de la expedición.',
-        effects:[]
-      }
+      {icon:'🗺️',label:'ETAPA 1 · VIAJE',title:`Rumbo a ${mission.name}`,text:`La party inicia un viaje de ${days} días.`,effects:[]},
+      {icon:'🔎',label:'ETAPA 2 · EXPLORACIÓN',title:'El grupo estudia la zona',text:'La composición y personalidad del grupo empiezan a importar.',effects:[]},
+      {icon:'⚔️',label:'ETAPA 3 · ENCUENTRO',title:'El momento decisivo',text:'La party enfrenta el principal peligro del contrato.',effects:[]},
+      {icon:'🔥',label:'ETAPA 4 · CAMPAMENTO',title:'Tiempo para respirar',text:'El grupo descansa y procesa lo ocurrido.',effects:[]},
+      {icon:'🏰',label:'ETAPA 5 · REGRESO',title:'De vuelta al gremio',text:'El Grifo de Plata espera noticias.',effects:[]}
     ];
 
-    lines.push(`<p><b>${mission.name}</b></p>`);
-    lines.push(`<p class="muted">${party.map(x=>x.name).join(', ')} parten durante ${mission.days} días.</p>`);
-    lines.push(`<p>Probabilidad estimada de éxito: <b>${Math.round(chance*100)}%</b>${syn.notes.length?' · Ventajas: '+syn.notes.join(', '):''}</p>`);
+    lines.push(`<p><b>${mission.name}</b> · ${party.map(h=>h.name).join(', ')}</p>`);
+    lines.push(`<p class="muted">Plan: ${plan.pace.name} · ${plan.priority.name} · ${plan.supply.name}</p>`);
+    lines.push(`<p>Éxito estimado: <b>${Math.round(chance*100)}%</b></p>`);
 
     applyFlavor(stages[0],'travel',lines);
-    addStageEffect(stages[0],`Destino: ${mission.name}`,'');
-    if(syn.notes.length){
-      syn.notes.forEach(note=>addStageEffect(stages[0],note,'good'));
-    }
+    addStageEffect(stages[0],`${plan.pace.name} · ${plan.priority.name}`,'');
+    if(plan.cost) addStageEffect(stages[0],`Suministros: -${plan.cost} oro`,'');
+    syn.notes.forEach(n=>addStageEffect(stages[0],n,'good'));
 
     applyFlavor(stages[1],'exploration',lines);
     applyClassMoment(party,stages[1],lines);
     applyTraitMoment(party,stages[1],lines,extras);
 
-    setEncounterFlavor(mission,stages[2]);
-    combatEvent(party,success,lines,stages[2]);
-    addStageEffect(stages[2],success?'Objetivo asegurado':'Retirada organizada',success?'good':'bad');
+    combatEvent(party,mission,success,lines,stages[2],plan.injury);
 
     applyFlavor(stages[3],'camp',lines);
     personalityEvent(party,lines,stages[3]);
-    if(party.length>=3 && oneIn(3)){
-      applyTraitMoment(party,stages[3],lines,extras);
-    }
+    if(party.length>=3&&oneIn(3)) applyTraitMoment(party,stages[3],lines,extras);
 
-    let baseGain;
-    if(success){
-      baseGain=Math.round(mission.reward*(0.85+Math.random()*0.35));
-      state.rep+=4+mission.difficulty*2;
-    }else{
-      baseGain=Math.round(mission.reward*(0.10+Math.random()*0.15));
-      state.rep=Math.max(0,state.rep-1);
+    let baseGain=Math.round(mission.reward*(success?(0.85+Math.random()*0.35):(0.1+Math.random()*0.15))*plan.reward);
+    if(state.planning.priority==='treasure'&&Math.random()<0.45+plan.treasure){
+      const treasure=25+Math.floor(Math.random()*(35+mission.difficulty*20));
+      extras.bonusGold+=treasure;
     }
     const gain=baseGain+extras.bonusGold;
     state.gold+=gain;
 
-    if(success){
-      lines.push(`<p class="good"><b>✓ La misión tiene éxito · +${gain} oro</b></p>`);
-    }else{
-      lines.push(`<p class="bad"><b>✕ La party abandona la misión · recupera ${gain} oro</b></p>`);
-    }
-    if(extras.bonusGold){
-      lines.push(`<p class="good">Hallazgos durante la expedición: +${extras.bonusGold} oro adicional.</p>`);
-    }
+    const oldRep=state.rep;
+    if(success) state.rep+=4+mission.difficulty*2;
+    else state.rep=Math.max(0,state.rep-1);
 
     party.forEach(h=>{
-      const beforeLevel=h.level;
-      const beforeInjury=h.injury;
       h.expeditions++;
-      const xp=success?38+mission.difficulty*23:18+mission.difficulty*10;
+      const training=state.facilities.training||0;
+      const xp=Math.round((success?38+mission.difficulty*23:18+mission.difficulty*10)*(1+training*0.1));
       h.xp+=xp;
+      const motivated=applyMotivationProgress(h,mission,success);
+      const leveled=levelHeroIfNeeded(h);
 
-      while(h.xp>=threshold(h.level)){
-        h.xp-=threshold(h.level);
-        h.level++;
-      }
-
-      const injuryChance=(success?0.08:0.24)+mission.difficulty*0.025+traitScore(h,'risk')*0.012;
-      if(Math.random()<injuryChance) h.injury=clamp(h.injury+1,0,3);
-      else if(h.injury>0 && success && Math.random()<0.35) h.injury--;
-
-      const leveled=h.level>beforeLevel;
-      const injuryDelta=h.injury-beforeInjury;
-
-      lines.push(`<p>${DATA.classes[h.cls].icon} <b>${h.name}</b> +${xp} XP${leveled?` · <b>SUBE A NV.${h.level}</b>`:''}${h.injury?' · Herida '+h.injury:''}</p>`);
-
-      addStageEffect(stages[3],`${h.name} · +${xp} XP`,leveled?'good':'');
-      if(leveled) addStageEffect(stages[3],`${h.name} alcanza Nv.${h.level}`,'good');
-      if(injuryDelta>0) addStageEffect(stages[3],`${h.name} · Herida ${h.injury}`,'bad');
-      if(injuryDelta<0) addStageEffect(stages[3],`${h.name} se recupera parcialmente`,'good');
+      addStageEffect(stages[3],`${h.name} +${xp} XP`,leveled?'good':'');
+      if(h.injury) addStageEffect(stages[3],`${h.name}: ${h.injury.name} · ${h.injury.daysLeft}d`,'bad');
+      if(motivated) addStageEffect(stages[3],`${h.name}: objetivo personal`,'good');
 
       heroResults.push({
         title:`${DATA.classes[h.cls].icon} ${h.name}`,
-        text:`+${xp} XP · Nv.${h.level}${h.injury?' · Herida '+h.injury:' · Sano'}`,
+        text:`+${xp} XP · Nv.${h.level}${h.injury?' · '+h.injury.name:' · Sano'}`,
         kind:h.injury?'':'good'
       });
     });
 
+    const tavern=state.facilities.tavern||0;
     for(let i=0;i<party.length;i++){
       for(let j=i+1;j<party.length;j++){
         const social=(traitScore(party[i],'social')+traitScore(party[j],'social'))/2;
-        const passiveBond=Math.max(0,2+Math.round(social));
-        changeRelation(party[i].id,party[j].id,passiveBond,success?0:1,oneIn(14)?2:0);
+        const bond=Math.max(0,2+Math.round(social))+tavern;
+        changeRelation(party[i].id,party[j].id,bond,success?0:1,oneIn(12)?2:0);
       }
     }
 
     let lost=null;
-    if(!success && mission.difficulty>=3){
-      const danger=party.filter(x=>x.injury>=3);
-      if(danger.length && Math.random()<0.08+mission.difficulty*0.01){
+    if(!success&&mission.difficulty>=4){
+      const danger=party.filter(h=>h.injury?.severity===3);
+      if(danger.length&&Math.random()<0.035+mission.difficulty*0.005){
         lost=rand(danger);
         lost.alive=false;
         state.selected=state.selected.filter(id=>id!==lost.id);
-        lines.push(`<p class="bad"><b>☠ ${lost.name} no regresó de la expedición.</b></p>`);
-        state.chronicle.unshift(`Día ${state.day} · ${lost.name} murió durante ${mission.name}.`);
+        addChronicle(`${lost.name} murió durante ${mission.name}.`);
+        addMemory(lost,`su última expedición fue ${mission.name}.`);
         addStageEffect(stages[4],`${lost.name} no regresó`,'bad');
       }
     }
 
-    state.day+=mission.days;
-    while(state.day>90){
-      state.day-=90;
-      state.year++;
-    }
-    state.missionsDone++;
-    state.chronicle.unshift(`Día ${state.day} · ${party.map(x=>x.name).join(', ')} ${success?'completaron':'regresaron de'} ${mission.name}.`);
+    advanceDays(days);
+    if(Math.random()<0.3) triggerGuildLifeEvent(false);
+    processRelationships(false);
+    if(oldRep!==state.rep) checkRegionUnlocks();
 
-    Object.entries(state.relations).forEach(([k,r])=>{
-      const [a,b]=k.split('-').map(Number);
-      const A=member(a),B=member(b);
-      if(!A||!B||A.alive===false||B.alive===false) return;
-      if(r.status==='Atracción mutua' && r.attraction>=65 && oneIn(3)){
-        r.status='Romance naciente';
-        lines.push(`<p class="event"><b>Desarrollo personal:</b> ${A.name} y ${B.name} parecen haber empezado a verse como algo más que compañeros.</p>`);
-        state.chronicle.unshift(`Día ${state.day} · Entre ${A.name} y ${B.name} comienza un romance.`);
-        addStageEffect(stages[4],`${A.name} y ${B.name}: romance naciente`,'bond');
-      }
-    });
-
-    const returnVariants=success
-      ? [
-          `La party cruza las puertas del gremio con el objetivo cumplido y ${gain} monedas de oro.`,
-          `Al caer la tarde, el grupo vuelve al Grifo de Plata con buenas noticias y ${gain} monedas de oro.`,
-          `Los aventureros regresan cansados pero satisfechos. La misión dejó ${gain} monedas para el gremio.`
-        ]
-      : [
-          `La party regresa antes de lo esperado. No lograron el objetivo, pero vuelven juntos con ${gain} monedas recuperadas.`,
-          `Las puertas del gremio se abren para recibir al grupo. La misión falló, aunque consiguieron recuperar ${gain} monedas.`,
-          `El regreso es más silencioso de lo habitual. Habrá otra oportunidad; esta vez vuelven con ${gain} monedas.`
-        ];
-    stages[4].text=rand(returnVariants);
+    const returnText=success
+      ?rand([
+        `La party regresa con el contrato cumplido y ${gain} monedas para el gremio.`,
+        `El grupo cruza las puertas del gremio cansado, satisfecho y con ${gain} monedas.`,
+        `Las noticias de la victoria llegan junto a los aventureros. El gremio recibe ${gain} monedas.`
+      ])
+      :rand([
+        `El grupo regresa antes de lo esperado. El objetivo quedó pendiente, pero recuperaron ${gain} monedas.`,
+        `La expedición termina en retirada. Todos tendrán tiempo para aprender de lo ocurrido.`,
+        `El regreso es más silencioso. La misión falló, aunque el grupo vuelve con ${gain} monedas.`
+      ]);
+    stages[4].text=returnText;
     addStageEffect(stages[4],`+${gain} oro`,'good');
-    if(extras.bonusGold) addStageEffect(stages[4],`Hallazgos: +${extras.bonusGold}`,'good');
-    addStageEffect(stages[4],`Reputación: ${state.rep}`,success?'good':'');
+    addStageEffect(stages[4],`Reputación ${state.rep}`,success?'good':'');
+    if(extras.bonusGold) addStageEffect(stages[4],`Hallazgos +${extras.bonusGold}`,'good');
+
+    addChronicle(`${party.map(h=>h.name).join(', ')} ${success?'completaron':'regresaron de'} ${mission.name}.`);
+    lines.push(`<p class="${success?'good':'bad'}"><b>${success?'✓ Victoria':'↩ Retirada'} · +${gain} oro</b></p>`);
 
     const summary=[
-      {
-        title:success?'✓ Victoria':'↩ Retirada',
-        text:`${mission.name} · ${mission.days} días`,
-        kind:success?'good':'bad'
-      },
-      {
-        title:'Tesorería',
-        text:`+${gain} oro · Total ${state.gold}`,
-        kind:'good'
-      },
+      {title:success?'✓ Victoria':'↩ Retirada',text:`${mission.name} · ${days} días`,kind:success?'good':'bad'},
+      {title:'Tesorería',text:`+${gain} oro · Total ${state.gold}`,kind:'good'},
+      {title:'Plan',text:`${plan.pace.name} · ${plan.priority.name} · ${plan.supply.name}`,kind:''},
       ...heroResults
     ];
-
-    if(extras.bonusGold){
-      summary.splice(2,0,{
-        title:'Hallazgo',
-        text:`+${extras.bonusGold} oro encontrado durante la expedición`,
-        kind:'good'
-      });
-    }
-
-    if(lost){
-      summary.push({title:`☠ ${lost.name}`,text:'No regresó de la expedición.',kind:'bad'});
-    }
+    if(lost) summary.push({title:`☠ ${lost.name}`,text:'No regresó de la expedición.',kind:'bad'});
 
     $('report').innerHTML=lines.join('');
     $('resultTag').textContent=success?'Victoria':'Retirada';
 
-    expeditionView={
-      mission,
-      party,
-      stages,
-      summary,
-      success,
-      index:0
-    };
-
+    expeditionView={mission,party,stages,summary,success,index:0};
     saveState(false);
     renderAll();
     navigate('mission');
     setExpeditionControls(true);
     renderExpeditionStage();
-    notice('La expedición ha comenzado. Avanza etapa por etapa.');
+    notice('La expedición ha comenzado.');
+  }
+
+  function navigate(screen){
+    if(screen==='detail'&&!currentDetailId) screen='adventurers';
+    currentScreen=screen;
+    document.querySelectorAll('[data-screen-panel]').forEach(panel=>{
+      panel.classList.toggle('active',panel.dataset.screenPanel===screen);
+    });
+    document.querySelectorAll('button[data-screen]').forEach(btn=>{
+      const active=btn.dataset.screen===screen||(screen==='detail'&&btn.dataset.screen==='adventurers');
+      btn.classList.toggle('active',active);
+    });
+    if(screen==='detail') renderDetail();
+    if(screen==='party') renderPartySummary();
+    if(screen==='mission') renderMission();
+    if(screen==='legacy') renderLegacy();
   }
 
   function renderHeader(){
-    $('goldStat').textContent=String(state.gold);
-    $('dayStat').textContent=String(state.day);
-    $('yearStat').textContent=String(state.year);
-    $('repStat').textContent=String(state.rep);
-    $('missionsStat').textContent=String(state.missionsDone);
+    $('goldStat').textContent=state.gold;
+    $('dayStat').textContent=state.day;
+    $('yearStat').textContent=state.year;
+    $('repStat').textContent=state.rep;
+    $('missionsStat').textContent=state.missionsDone;
     $('partyNavCount').textContent=`${state.selected.length}/4`;
 
-    const alive=state.roster.filter(x=>x.alive!==false);
-    const injured=alive.filter(x=>x.injury>0);
-    $('guildMembers').textContent=String(alive.length);
-    $('guildAvailable').textContent=String(alive.filter(x=>x.injury<3).length);
-    $('guildInjured').textContent=String(injured.length);
-    $('latestEvent').textContent=state.chronicle[0]||'Sin acontecimientos todavía.';
+    const active=activeMembers();
+    $('guildMembers').textContent=active.length;
+    $('guildInjured').textContent=active.filter(h=>h.injury).length;
+    $('guildAvailable').textContent=active.filter(canDeploy).length;
+    $('latestEvent').textContent=state.chronicle[0]||'Sin acontecimientos.';
 
-    $('overviewTotal').textContent=String(alive.length);
-    $('overviewHealthy').textContent=String(alive.filter(x=>x.injury===0).length);
-    $('overviewInjured').textContent=String(injured.length);
-    $('overviewParty').textContent=String(state.selected.length);
-    $('rosterCount').textContent=`${alive.length} miembro${alive.length===1?'':'s'}`;
-    $('chronicleCount').textContent=`${state.chronicle.length} evento${state.chronicle.length===1?'':'s'}`;
+    $('overviewTotal').textContent=active.length;
+    $('overviewHealthy').textContent=active.filter(h=>!h.injury).length;
+    $('overviewInjured').textContent=active.filter(h=>h.injury).length;
+    $('overviewParty').textContent=state.selected.length;
+    $('rosterCount').textContent=`${active.length} miembro${active.length===1?'':'s'}`;
+    $('chronicleCount').textContent=`${state.chronicle.length} eventos`;
   }
 
   function renderApplicants(){
     const box=$('applicants');
     box.innerHTML='';
-    state.applicants.forEach(a=>{
+    state.applicants.slice(0,6).forEach(a=>{
       const c=DATA.classes[a.cls];
+      const mot=DATA.motivations.find(m=>m.id===a.motivation);
       const el=document.createElement('div');
       el.className='applicant-card';
       el.innerHTML=`
-        <div class="hero-name">${c.icon} ${a.name}</div>
+        <div class="hero-name">${c.icon} ${a.name}${a.legacy?' <span class="heir-badge">· Legado</span>':''}</div>
         <div class="small">${a.cls} · ${c.role}</div>
         <div class="tiny">${a.traits.join(' · ')}</div>
-        <div class="tiny">Edad ${a.age}</div>
-        <button type="button">${a.cost} oro · Reclutar</button>
-      `;
+        <div class="tiny">${a.origin} · ${mot?.name||''}</div>
+        <div class="tiny">Edad ${a.age} · Gen. ${a.generation||1}</div>
+        <button type="button">${a.cost} oro · Reclutar</button>`;
       el.querySelector('button').addEventListener('click',()=>recruit(a.id));
       box.appendChild(el);
     });
   }
 
+  function renderFacilities(){
+    $('facilities').innerHTML=Object.entries(DATA.facilities).map(([key,f])=>{
+      const level=state.facilities[key]||0;
+      const max=level>=3;
+      const cost=max?'MAX':`${f.costs[level]} oro`;
+      return `<div class="facility-card">
+        <span class="facility-icon">${f.icon}</span>
+        <span><b>${f.name}</b> <span class="level">Nv.${level}</span><br><span class="tiny">${f.desc}</span></span>
+        <button type="button" data-facility="${key}" ${max?'disabled':''}>${cost}</button>
+      </div>`;
+    }).join('');
+    document.querySelectorAll('[data-facility]').forEach(btn=>{
+      btn.addEventListener('click',()=>upgradeFacility(btn.dataset.facility));
+    });
+    $('guildLifeEvent').textContent=state.lastGuildEvent||'El gremio está tranquilo hoy.';
+  }
+
   function renderAdventurers(){
     const box=$('adventurerList');
-    box.innerHTML='';
-    const alive=state.roster.filter(x=>x.alive!==false);
-
-    if(!alive.length){
-      box.innerHTML='<div class="applicant-card"><div class="small">Todavía no has reclutado a nadie.</div></div>';
+    const active=activeMembers();
+    if(!active.length){
+      box.innerHTML='<div class="applicant-card">Todavía no has reclutado a nadie.</div>';
       return;
     }
-
-    alive.forEach(h=>{
-      const c=DATA.classes[h.cls];
+    box.innerHTML='';
+    active.forEach(h=>{
+      const spec=specializationData(h);
       const btn=document.createElement('button');
       btn.type='button';
       btn.className='adventurer-row';
       btn.innerHTML=`
-        <span class="class-icon">${c.icon}</span>
-        <span>
-          <span class="hero-name">${h.name} · Nv.${h.level}</span><br>
-          <span class="tiny">${h.cls} · ${h.traits.join(' + ')}${h.injury?' · Herida '+h.injury:''}</span>
-        </span>
-        <span class="chevron">›</span>
-      `;
+        <span class="class-icon">${DATA.classes[h.cls].icon}</span>
+        <span><span class="hero-name">${h.name} · Nv.${h.level}</span><br>
+        <span class="tiny">${spec?.name||h.cls} · ${h.age} años · Gen.${h.generation||1}${h.injury?' · '+h.injury.name+' '+h.injury.daysLeft+'d':''}</span></span>
+        <span class="chevron">›</span>`;
       btn.addEventListener('click',()=>{
         currentDetailId=h.id;
         renderDetail();
@@ -726,210 +1107,258 @@
 
   function renderDetail(){
     const h=member(currentDetailId);
-    if(!h || h.alive===false){
-      currentDetailId=null;
-      navigate('adventurers');
-      return;
-    }
+    if(!h||h.alive===false){currentDetailId=null;navigate('adventurers');return;}
+    const cls=DATA.classes[h.cls];
+    const spec=specializationData(h);
+    const mot=motivationData(h);
 
-    const c=DATA.classes[h.cls];
-    $('detailPortrait').textContent=c.icon;
+    $('detailPortrait').textContent=cls.icon;
     $('detailName').textContent=h.name;
-    $('detailMeta').textContent=`${h.cls} · Nv.${h.level} · ${h.age} años`;
+    $('detailMeta').textContent=`${spec?.name||h.cls} · Nv.${h.level} · ${h.age} años · Gen.${h.generation||1}`;
+    $('detailStatusBadge').textContent=h.retired?'Veterano retirado':h.injury?`${h.injury.name} · ${h.injury.daysLeft} días`:'Activo y sano';
 
-    $('detailTraits').innerHTML=h.traits.map(t=>{
-      const info=DATA.traits[t];
-      return `<span class="detail-pill"><b>${t}</b><br><span class="tiny">${info?.desc||''}</span></span>`;
-    }).join('');
+    $('detailIdentity').innerHTML=`
+      <span class="detail-pill"><b>Origen</b><br>${h.origin}</span>
+      <span class="detail-pill"><b>Motivación</b><br>${mot.name}<br><span class="tiny">${mot.desc}</span></span>
+      <span class="detail-pill"><b>Rasgos</b><br>${h.traits.join(' · ')}</span>`;
 
     $('detailState').innerHTML=`
       <span class="detail-pill"><b>XP</b> ${h.xp}/${threshold(h.level)}</span>
       <span class="detail-pill"><b>Expediciones</b> ${h.expeditions}</span>
-      <span class="detail-pill"><b>Salud</b> ${h.injury?'Herida '+h.injury:'Sano'}</span>
-      <span class="detail-pill"><b>Habilidad</b> ${c.ability}</span>
-    `;
+      <span class="detail-pill ${h.injury?'injury-pill':''}"><b>Salud</b><br>${h.injury?`${h.injury.name} · ${h.injury.daysLeft} días<br><span class="tiny">${h.injury.desc}</span>`:'Sano'}</span>
+      <span class="detail-pill"><b>Objetivo personal</b><br>${mot.name} · ${h.motivationProgress||0}/3</span>`;
+
+    if(spec){
+      $('detailSpecialization').innerHTML=`<span class="detail-pill"><b>${spec.name}</b><br>${spec.ability}<br><span class="tiny">${spec.desc}</span></span>`;
+    }else if(h.level>=4&&!h.retired){
+      $('detailSpecialization').innerHTML=`<div class="spec-choice">${(DATA.specializations[h.cls]||[]).map(s=>`
+        <button type="button" data-spec="${s.id}"><b>${s.name}</b><br><span class="tiny">${s.desc}</span></button>`).join('')}</div>`;
+      document.querySelectorAll('[data-spec]').forEach(btn=>btn.addEventListener('click',()=>chooseSpecialization(h,btn.dataset.spec)));
+    }else{
+      $('detailSpecialization').innerHTML='<span class="detail-pill">Las especializaciones se desbloquean en nivel 4.</span>';
+    }
 
     const rels=[];
-    Object.entries(state.relations).forEach(([k,r])=>{
-      const ids=k.split('-').map(Number);
+    Object.entries(state.relations).forEach(([key,r])=>{
+      const ids=key.split('-').map(Number);
       if(!ids.includes(h.id)) return;
-      const otherId=ids[0]===h.id?ids[1]:ids[0];
-      const other=member(otherId);
-      if(!other) return;
-      rels.push({other,r});
+      const other=member(ids[0]===h.id?ids[1]:ids[0]);
+      if(other) rels.push({other,r});
     });
-    rels.sort((a,b)=>Math.max(b.r.bond,b.r.tension,b.r.attraction)-Math.max(a.r.bond,a.r.tension,a.r.attraction));
+    rels.sort((a,b)=>Math.max(b.r.bond,b.r.attraction)-Math.max(a.r.bond,a.r.attraction));
+    let relHtml=rels.length?rels.slice(0,5).map(x=>`
+      <span class="detail-pill"><b>${x.other.name}</b> · ${relationStatus(x.r)}<br>
+      <span class="tiny">Bond ${x.r.bond} · Tensión ${x.r.tension}${x.r.attraction?' · Atracción '+x.r.attraction:''}</span></span>`).join(''):'<span class="detail-pill">Sin vínculos significativos todavía.</span>';
+    const kids=state.children.filter(c=>c.parentIds.includes(h.id));
+    if(kids.length) relHtml+=kids.map(c=>`<span class="detail-pill"><b>${c.name}</b> · descendiente · ${c.age} años · Gen.${c.generation}</span>`).join('');
+    $('detailRelations').innerHTML=relHtml;
 
-    $('detailRelations').innerHTML=rels.length
-      ? rels.slice(0,5).map(x=>`<span class="detail-pill"><b>${x.other.name}</b> · ${x.r.status}<br><span class="tiny">Bond ${x.r.bond} · Tensión ${x.r.tension}${x.r.attraction?' · Atracción '+x.r.attraction:''}</span></span>`).join('')
-      : '<span class="detail-pill">Aún no tiene vínculos significativos.</span>';
+    $('detailHistory').innerHTML=(h.memory?.length?h.memory:['Su historia en el gremio apenas comienza.']).map(x=>`<span class="detail-pill">${x}</span>`).join('');
 
-    const history=state.chronicle.filter(x=>x.includes(h.name)).slice(0,5);
-    $('detailHistory').innerHTML=history.length
-      ? history.map(x=>`<span class="detail-pill">${x}</span>`).join('')
-      : '<span class="detail-pill">Su historia en el gremio apenas comienza.</span>';
+    const add=$('detailAddPartyBtn');
+    if(h.retired){
+      add.classList.add('is-hidden');
+    }else{
+      add.classList.remove('is-hidden');
+      const selected=state.selected.includes(h.id);
+      add.disabled=!selected&&!canDeploy(h) || (!selected&&state.selected.length>=4);
+      add.textContent=selected?'Quitar de Party':!canDeploy(h)?'Necesita recuperarse':'Añadir a Party';
+    }
 
-    const addBtn=$('detailAddPartyBtn');
-    const selected=state.selected.includes(h.id);
-    const full=state.selected.length>=4 && !selected;
-    addBtn.disabled=full;
-    addBtn.textContent=selected?'Quitar de Party':full?'Party completa':'Añadir a Party';
+    const retire=$('retireBtn');
+    const eligible=!h.retired&&(h.age>=45||(h.level>=6&&h.expeditions>=10));
+    retire.classList.toggle('is-hidden',!eligible);
   }
 
   function renderRoster(){
     const box=$('roster');
-    box.innerHTML='';
-    const alive=state.roster.filter(x=>x.alive!==false);
-
-    if(!alive.length){
-      box.innerHTML='<div class="party-row"><div class="small" style="padding:12px">Todavía no has reclutado a nadie.</div></div>';
+    const active=activeMembers();
+    if(!active.length){
+      box.innerHTML='<div class="party-row"><div class="small" style="padding:12px">No hay aventureros activos.</div></div>';
       $('partyInfo').textContent='0 / 4';
       return;
     }
-
-    alive.forEach(h=>{
-      const c=DATA.classes[h.cls];
+    box.innerHTML='';
+    active.forEach(h=>{
       const el=document.createElement('div');
       el.className='party-row';
-      const checked=state.selected.includes(h.id)?'checked':'';
-      el.innerHTML=`
-        <label>
-          <input type="checkbox" ${checked}>
-          <span>
-            <span class="hero-name">${c.icon} ${h.name} · Nv.${h.level}</span><br>
-            <span class="tiny">${h.cls} · ${h.traits.join(' + ')}${h.injury?' · Herida '+h.injury:''}</span>
-          </span>
-        </label>
-      `;
-      el.querySelector('input').addEventListener('change',e=>toggleParty(h.id,e.target.checked));
+      const checked=state.selected.includes(h.id);
+      const deploy=canDeploy(h);
+      el.innerHTML=`<label>
+        <input type="checkbox" ${checked?'checked':''} ${!deploy&&!checked?'disabled':''}>
+        <span><span class="hero-name">${DATA.classes[h.cls].icon} ${h.name} · Nv.${h.level}</span><br>
+        <span class="tiny">${specializationData(h)?.name||h.cls} · ${h.traits.join(' + ')}${h.injury?' · '+h.injury.name+' '+h.injury.daysLeft+'d':''}</span></span>
+      </label>`;
+      const input=el.querySelector('input');
+      input.addEventListener('change',e=>toggleParty(h.id,e.target.checked));
       box.appendChild(el);
     });
-
     $('partyInfo').textContent=`${state.selected.length} / 4`;
   }
 
   function renderPartySummary(){
-    const party=state.selected.map(member).filter(x=>x&&x.alive!==false);
+    const party=state.selected.map(member).filter(Boolean);
     const slots=[];
     for(let i=0;i<4;i++){
       const h=party[i];
-      if(h){
-        slots.push(`<div class="party-slot"><b>${i+1}.</b> ${DATA.classes[h.cls].icon} ${h.name} · ${h.cls}</div>`);
-      }else{
-        slots.push(`<div class="party-slot empty"><b>${i+1}.</b> — vacío —</div>`);
-      }
+      slots.push(h
+        ?`<div class="party-slot"><b>${i+1}.</b> ${DATA.classes[h.cls].icon} ${h.name} · ${specializationData(h)?.name||h.cls}</div>`
+        :`<div class="party-slot empty"><b>${i+1}.</b> — vacío —</div>`);
     }
     $('partySlots').innerHTML=slots.join('');
-
-    if(!party.length){
-      $('partySynergy').innerHTML='<strong>Sinergias</strong><br>Forma una party para evaluar su composición.';
-      return;
-    }
-
     const syn=partySynergy(party);
-    let bondTotal=0, pairs=0;
-    for(let i=0;i<party.length;i++){
-      for(let j=i+1;j<party.length;j++){
-        const r=relation(party[i].id,party[j].id);
-        bondTotal+=r.bond-r.tension;
-        pairs++;
-      }
+    $('partySynergy').innerHTML=`<strong>Sinergias</strong><br>${syn.notes.length?syn.notes.join(' · '):'Sin bonificaciones especiales'}`;
+    const chem=partyChemistry(party);
+    $('partyChemistry').innerHTML=`<strong>${chem.label}</strong><br>${chem.detail}`;
+  }
+
+  function fillPlanningSelect(selectId,obj,current){
+    const sel=$(selectId);
+    if(!sel.options.length){
+      Object.entries(obj).forEach(([key,v])=>{
+        const o=document.createElement('option');
+        o.value=key;o.textContent=v.name;sel.appendChild(o);
+      });
     }
-    const cohesion=pairs?Math.round(bondTotal/pairs):0;
-    $('partySynergy').innerHTML=`
-      <strong>Sinergias</strong><br>
-      ${syn.notes.length?syn.notes.join(' · '):'Sin bonificaciones de clase'}<br>
-      <span class="tiny">Cohesión del grupo: ${cohesion>=0?'+':''}${cohesion}</span>
-    `;
+    sel.value=current;
   }
 
   function renderMission(){
+    fillPlanningSelect('paceSelect',DATA.planning.pace,state.planning.pace);
+    fillPlanningSelect('prioritySelect',DATA.planning.priority,state.planning.priority);
+    fillPlanningSelect('supplySelect',DATA.planning.supplies,state.planning.supply);
+
     const select=$('missionSelect');
-    const previous=select.value;
-
-    if(!select.options.length){
-      DATA.missions.forEach(m=>{
-        const o=document.createElement('option');
-        o.value=m.id;
-        o.textContent=`${'★'.repeat(m.difficulty)} · ${m.name}`;
-        select.appendChild(o);
-      });
+    const current=select.value;
+    const missions=unlockedMissions();
+    select.innerHTML='';
+    missions.forEach(m=>{
+      const reg=DATA.regions.find(r=>r.id===m.region);
+      const o=document.createElement('option');
+      o.value=m.id;
+      o.textContent=`${'★'.repeat(m.difficulty)} · ${m.name} · ${reg?.name||''}`;
+      select.appendChild(o);
+    });
+    if(current&&missions.some(m=>m.id===current)) select.value=current;
+    const m=missions.find(x=>x.id===select.value)||missions[0];
+    if(!m){
+      $('missionDetails').textContent='No hay contratos disponibles.';
+      return;
     }
-    if(previous) select.value=previous;
-
-    const m=DATA.missions.find(x=>x.id===select.value)||DATA.missions[0];
-    $('missionDetails').innerHTML=`
-      <b>${m.name}</b><br>
+    const region=DATA.regions.find(r=>r.id===m.region);
+    $('missionDetails').innerHTML=`<b>${m.name}</b> <span class="mission-region">${region?.name||''}</span><br>
       <span class="small">${m.desc}</span><br><br>
-      Dificultad: ${'★'.repeat(m.difficulty)}${'☆'.repeat(Math.max(0,4-m.difficulty))}<br>
-      Duración: ${m.days} días<br>
-      Recompensa base: ${m.reward} oro
-    `;
+      Dificultad: ${'★'.repeat(m.difficulty)}${'☆'.repeat(Math.max(0,5-m.difficulty))} · Duración base: ${m.days} días · Recompensa: ${m.reward} oro`;
+
+    renderPlanSummary();
     renderMissionParty();
   }
 
+  function renderPlanSummary(){
+    state.planning.pace=$('paceSelect').value||state.planning.pace;
+    state.planning.priority=$('prioritySelect').value||state.planning.priority;
+    state.planning.supply=$('supplySelect').value||state.planning.supply;
+    const p=planningModifiers();
+    const pct=Math.round(p.chance*100);
+    const risk=Math.round(p.injury*100);
+    $('planSummary').innerHTML=`<b>Plan del maestro del gremio</b><br>
+      Éxito ${pct>=0?'+':''}${pct}% · Riesgo de herida ${risk>=0?'+':''}${risk}% · Recompensa ×${p.reward.toFixed(2)} · Coste ${p.cost} oro<br>
+      <span class="tiny">${p.pace.desc} ${p.priority.desc} ${p.supply.desc}</span>`;
+    saveState(false);
+  }
+
   function renderMissionParty(){
-    const el=$('missionParty');
-    if(!el) return;
-    const party=state.selected.map(member).filter(x=>x&&x.alive!==false);
-    el.textContent=party.length?party.map(x=>x.name).join(' · '):'Sin formar';
+    const party=state.selected.map(member).filter(Boolean);
+    $('missionParty').textContent=party.length?party.map(h=>h.name).join(' · '):'Sin formar';
   }
 
   function renderRelations(){
     const rows=[];
-    Object.entries(state.relations).forEach(([k,r])=>{
-      const [a,b]=k.split('-').map(Number);
+    Object.entries(state.relations).forEach(([key,r])=>{
+      const [a,b]=key.split('-').map(Number);
       const A=member(a),B=member(b);
       if(!A||!B) return;
-      if(r.bond<5&&r.tension<5&&r.attraction<5) return;
+      if(r.bond<5&&r.tension<5&&r.attraction<5&&!r.romance&&!r.married) return;
       rows.push({A,B,r});
     });
-
-    rows.sort((x,y)=>Math.max(y.r.bond,y.r.tension,y.r.attraction)-Math.max(x.r.bond,x.r.tension,x.r.attraction));
-    $('relations').innerHTML=rows.length
-      ? rows.slice(0,12).map(x=>`
-        <div class="relation-row">
-          <div>
-            <div class="hero-name">${x.A.name} ↔ ${x.B.name}</div>
-            <div class="tiny">${x.r.status}</div>
-          </div>
-          <div class="relation-values">
-            Bond ${x.r.bond}<br>
-            Tensión ${x.r.tension}
-            ${x.r.attraction?`<br>Atracción ${x.r.attraction}`:''}
-          </div>
-        </div>
-      `).join('')
-      : '<div class="chronicle-row">Aún no existen relaciones significativas.</div>';
+    rows.sort((x,y)=>{
+      const xa=(x.r.married?200:x.r.romance?150:0)+Math.max(x.r.bond,x.r.tension,x.r.attraction);
+      const ya=(y.r.married?200:y.r.romance?150:0)+Math.max(y.r.bond,y.r.tension,y.r.attraction);
+      return ya-xa;
+    });
+    $('relations').innerHTML=rows.length?rows.slice(0,14).map(x=>{
+      const status=relationStatus(x.r);
+      const cls=x.r.married||x.r.romance?'relationship-romance':x.r.tension>=45?'relationship-tense':'relationship-good';
+      return `<div class="relation-row ${cls}">
+        <div><div class="hero-name">${x.A.name} ↔ ${x.B.name}</div><div class="tiny">${status}</div></div>
+        <div class="relation-values">Bond ${x.r.bond}<br>Tensión ${x.r.tension}${x.r.attraction?`<br>Atracción ${x.r.attraction}`:''}</div>
+      </div>`;
+    }).join(''):'<div class="chronicle-row">Aún no existen relaciones significativas.</div>';
   }
 
   function renderChronicle(){
-    $('chronicle').innerHTML=state.chronicle.slice(0,14).map(x=>`<div class="chronicle-row">${x}</div>`).join('');
+    $('chronicle').innerHTML=state.chronicle.slice(0,30).map(x=>`<div class="chronicle-row">${x}</div>`).join('');
+  }
+
+  function renderLegacy(){
+    const retired=state.roster.filter(h=>h.retired&&h.alive!==false);
+    const couples=[];
+    const seen=new Set();
+    Object.entries(state.relations).forEach(([key,r])=>{
+      if(!(r.romance||r.married)||seen.has(key)) return;
+      seen.add(key);
+      const [a,b]=key.split('-').map(Number);
+      const A=member(a),B=member(b);
+      if(A&&B) couples.push({A,B,r});
+    });
+
+    $('retiredCount').textContent=retired.length;
+    $('coupleCount').textContent=couples.length;
+    $('childCount').textContent=state.children.length;
+    const gens=[1,...state.roster.map(h=>h.generation||1),...state.children.map(c=>c.generation||1)];
+    $('generationStat').textContent=Math.max(...gens);
+
+    $('families').innerHTML=couples.length?couples.map(({A,B,r})=>{
+      const kids=state.children.filter(c=>c.parentIds.includes(A.id)&&c.parentIds.includes(B.id));
+      return `<div class="legacy-card family-tree">
+        <strong>${r.married?'💍':'♥'} ${A.name} + ${B.name}</strong>
+        <span>${r.married?'Familia establecida':'Pareja'} · Bond ${r.bond}</span>
+        ${kids.length?kids.map(c=>`<div class="family-child"><b>${c.name}</b> · ${c.age} años · Gen.${c.generation}${c.introduced?' · aspirante disponible':''}<br><span class="tiny">${c.traits.join(' · ')}</span></div>`).join(''):'<span class="tiny">Todavía no tienen descendientes registrados.</span>'}
+      </div>`;
+    }).join(''):'<div class="legacy-card">Todavía no hay parejas establecidas.</div>';
+
+    $('retiredList').innerHTML=retired.length?retired.map(h=>`<div class="legacy-card">
+      <strong>${DATA.classes[h.cls].icon} ${h.name}</strong>
+      ${specializationData(h)?.name||h.cls} · Nv.${h.level} · ${h.age} años · ${h.expeditions} expediciones<br>
+      <span class="tiny">Generación ${h.generation||1}${h.spouseId?' · Tiene familia':''}</span>
+    </div>`).join(''):'<div class="legacy-card">Aún no hay veteranos retirados.</div>';
   }
 
   function renderAll(){
     renderHeader();
     renderApplicants();
+    renderFacilities();
     renderAdventurers();
     renderRoster();
     renderPartySummary();
     renderMission();
     renderRelations();
     renderChronicle();
-    if(currentScreen==='detail' && currentDetailId) renderDetail();
+    renderLegacy();
+    if(currentScreen==='detail'&&currentDetailId) renderDetail();
   }
 
   document.querySelectorAll('button[data-screen]').forEach(btn=>{
     btn.addEventListener('click',()=>navigate(btn.dataset.screen));
   });
 
-  document.addEventListener('click',event=>{
-    const btn=event.target.closest('[data-go]');
-    if(!btn) return;
-    navigate(btn.dataset.go);
+  document.addEventListener('click',e=>{
+    const go=e.target.closest('[data-go]');
+    if(go) navigate(go.dataset.go);
   });
 
   $('missionSelect').addEventListener('change',renderMission);
+  ['paceSelect','prioritySelect','supplySelect'].forEach(id=>$(id).addEventListener('change',renderPlanSummary));
   $('dispatchBtn').addEventListener('click',dispatch);
   $('expeditionContinueBtn').addEventListener('click',advanceExpedition);
   $('toggleReportBtn').addEventListener('click',()=>{
@@ -938,55 +1367,57 @@
     report.classList.toggle('is-hidden',!hidden);
     $('toggleReportBtn').textContent=hidden?'Ocultar relato completo':'Ver relato completo';
   });
+
   $('saveBtn').addEventListener('click',()=>saveState(true));
+  $('advanceWeekBtn').addEventListener('click',advanceWeek);
+  $('advanceYearBtn').addEventListener('click',advanceYear);
 
   $('refreshApplicantsBtn').addEventListener('click',()=>{
-    if(state.gold<20){
-      notice('No tienes 20 oro.');
-      return;
-    }
+    if(state.gold<20){notice('No tienes 20 oro.');return;}
     state.gold-=20;
-    state.day++;
+    advanceDays(1);
     state.applicants=[];
     refillApplicants();
-    state.chronicle.unshift(`Día ${state.day} · Llegan nuevos aspirantes.`);
+    addChronicle('Llegan nuevos aspirantes al tablón de reclutamiento.');
     saveState(false);
     renderAll();
-    notice('Han llegado nuevos aventureros.');
+    notice('Han llegado nuevos aspirantes.');
   });
 
   $('clearPartyBtn').addEventListener('click',()=>{
     state.selected=[];
     saveState(false);
-    renderRoster();
-    renderPartySummary();
-    renderMissionParty();
-    renderHeader();
+    renderAll();
     notice('La Party ha sido vaciada.');
   });
 
   $('detailAddPartyBtn').addEventListener('click',()=>{
     const h=member(currentDetailId);
-    if(!h) return;
-    const selected=state.selected.includes(h.id);
-    toggleParty(h.id,!selected);
+    if(h) toggleParty(h.id,!state.selected.includes(h.id));
+  });
+
+  $('retireBtn').addEventListener('click',()=>{
+    const h=member(currentDetailId);
+    if(h) retireHero(h,true);
   });
 
   $('resetBtn').addEventListener('click',()=>{
-    const ok=window.confirm('¿Reiniciar toda la partida y borrar el guardado local?');
-    if(!ok) return;
+    if(!window.confirm('¿Reiniciar toda la partida V1.0 y borrar el guardado local?')) return;
     localStorage.removeItem(SAVE_KEY);
+    localStorage.removeItem(LEGACY_SAVE_KEY);
     state=freshState();
     nextId=1;
     currentDetailId=null;
+    expeditionView=null;
     refillApplicants();
+    saveState(false);
     renderAll();
     navigate('guild');
-    saveState(false);
     notice('Partida reiniciada.');
   });
 
   refillApplicants();
+  checkRegionUnlocks();
   renderAll();
   navigate('guild');
   saveState(false);
