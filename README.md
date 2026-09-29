@@ -3,10 +3,16 @@
 Guild Legacy is a mobile-landscape medieval fantasy guild simulation centered on autonomous expeditions, persistent adventurers, relationships, recovery and generational legacy.
 
 ## Version
-V1.2 — Story Theater
+V1.2.1 — Story Theater Viewport Fit
 
 ## Core loop
 Recruit adventurers -> form a party -> plan a mission -> watch an autonomous expedition -> review consequences -> improve the guild -> build relationships and careers -> retire veterans -> continue through future generations.
+
+## V1.2.1 viewport fix
+- Desktop Story Theater now fits within common 1080p browser viewports without page scrolling
+- Final expedition summary overlays the theater instead of adding vertical page height
+- Planning, stage ribbon, event card, party cards and bottom panels compact responsively on shorter desktop viewports
+- Composition remains unchanged; only vertical density and internal scrolling were adjusted
 
 ## V1.2 additions
 - New Story Theater expedition composition based on the approved visual reference
