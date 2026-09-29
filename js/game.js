@@ -950,8 +950,11 @@
     $('expeditionPartyVisual').innerHTML=partyTokens(expeditionView.party,featured?.id);
 
     const scene=$('storyScene');
-    scene.classList.remove('stage-travel','stage-exploration','stage-encounter','stage-camp','stage-return');
+    scene.classList.remove('stage-travel','stage-exploration','stage-encounter','stage-camp','stage-return','story-good','story-danger','story-bond');
     scene.classList.add(stageVisualClass(index));
+    if(stage.effects.some(e=>e.kind==='bad')) scene.classList.add('story-danger');
+    else if(stage.effects.some(e=>e.kind==='bond')) scene.classList.add('story-bond');
+    else if(stage.effects.some(e=>e.kind==='good')) scene.classList.add('story-good');
 
     document.querySelectorAll('.exp-step').forEach((el,i)=>{
       el.classList.toggle('done',i<index);
