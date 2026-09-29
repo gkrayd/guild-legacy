@@ -513,3 +513,66 @@ p{color:var(--muted)}
   .guild-lower-grid{grid-template-columns:1fr}
   .legacy-columns{grid-template-columns:1fr}
 }
+
+
+/* V1.1 — Balance & Playtest */
+.campaign-diagnostics{padding:0}
+.campaign-diagnostics summary{
+  list-style:none;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  cursor:pointer;
+}
+.campaign-diagnostics summary::-webkit-details-marker{display:none}
+.campaign-diagnostics summary span:first-child{display:grid;gap:2px}
+.campaign-diagnostics[open] summary{border-bottom:1px solid var(--border-soft)}
+.diagnostic-grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:6px;
+  padding:10px;
+}
+.diagnostic-card{
+  padding:7px;
+  border:1px solid var(--border-soft);
+  background:var(--panel3);
+  text-align:center;
+}
+.diagnostic-card span{
+  display:block;
+  font-size:9px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.diagnostic-card strong{font-size:12px}
+.balance-notes{
+  margin:0 10px 10px;
+  padding:8px;
+  border-left:3px solid var(--accent-dark);
+  background:var(--panel3);
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.4;
+}
+.title-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.title-badge{
+  display:inline-block;
+  padding:3px 6px;
+  border:1px solid var(--border-soft);
+  background:var(--panel2);
+  color:var(--accent);
+  font-size:10px;
+}
+.playtest-warning{color:var(--bad)}
+.playtest-good{color:var(--good)}
+
+@media (max-width:900px) and (orientation:landscape){
+  .diagnostic-grid{grid-template-columns:repeat(3,1fr);padding:7px}
+  .diagnostic-card{padding:5px}
+  .diagnostic-card strong{font-size:10px}
+  .balance-notes{font-size:9px;margin:0 7px 7px}
+}
