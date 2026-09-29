@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#171510" />
-  <title>Guild Legacy — V1.1 Balance & Playtest</title>
+  <title>Guild Legacy — V1.2 Story Theater</title>
   <link rel="stylesheet" href="css/game.css" />
 </head>
 <body>
@@ -21,7 +21,7 @@
       <div class="brand">
         <span class="eyebrow">GUILD LEGACY</span>
         <strong>El Grifo de Plata</strong>
-        <span class="build">V1.1</span>
+        <span class="build">V1.2</span>
       </div>
 
       <div class="hud-stats">
@@ -220,18 +220,20 @@
       </aside>
     </section>
 
-    <section id="screen-mission" class="game-screen mission-screen" data-screen-panel="mission">
-      <aside class="panel mission-controls">
-        <div>
-          <span class="section-kicker">PLANIFICACIÓN</span>
-          <h2>Misión</h2>
+    <section id="screen-mission" class="game-screen mission-screen story-screen" data-screen-panel="mission">
+      <div class="story-planning panel">
+        <div class="story-plan-main">
+          <div>
+            <span class="section-kicker">PLANIFICACIÓN DE EXPEDICIÓN</span>
+            <h2>Misión</h2>
+          </div>
+          <label class="story-contract">Contrato
+            <select id="missionSelect"></select>
+          </label>
+          <div id="missionDetails" class="mission-details story-mission-details"></div>
         </div>
 
-        <label for="missionSelect">Contrato disponible</label>
-        <select id="missionSelect"></select>
-        <div id="missionDetails" class="mission-details"></div>
-
-        <div class="planning-grid">
+        <div class="planning-grid story-planning-grid">
           <label>Ritmo
             <select id="paceSelect"></select>
           </label>
@@ -243,61 +245,104 @@
           </label>
         </div>
 
-        <div id="planSummary" class="plan-summary"></div>
+        <div id="planSummary" class="plan-summary story-plan-summary"></div>
 
-        <div class="mission-party">
-          <span>Party enviada</span>
-          <strong id="missionParty">Sin formar</strong>
-        </div>
-
-        <button id="dispatchBtn" class="primary full dispatch" type="button">ENVIAR EXPEDICIÓN</button>
-      </aside>
-
-      <article class="panel report-panel">
-        <div class="panel-title-row">
-          <div>
-            <span class="section-kicker">EXPEDICIÓN</span>
-            <h2>Informe</h2>
+        <div class="story-launch">
+          <div class="mission-party">
+            <span>Party</span>
+            <strong id="missionParty">Sin formar</strong>
           </div>
-          <span id="resultTag" class="tag">Sin expediciones</span>
+          <button id="dispatchBtn" class="primary dispatch" type="button">ENVIAR EXPEDICIÓN</button>
         </div>
+      </div>
 
-        <div id="expeditionTheater" class="expedition-theater">
-          <div class="expedition-head">
+      <article class="story-theater-shell">
+        <div id="expeditionTheater" class="expedition-theater story-theater">
+          <div class="story-stage-ribbon" aria-label="Etapas de la expedición">
+            <div class="exp-step" data-stage="0"><span>1</span><b>Viaje</b><small>Camino</small></div>
+            <div class="exp-step" data-stage="1"><span>2</span><b>Exploración</b><small>Descubrimiento</small></div>
+            <div class="exp-step" data-stage="2"><span>3</span><b>Encuentro</b><small>Peligro</small></div>
+            <div class="exp-step" data-stage="3"><span>4</span><b>Campamento</b><small>Vínculos</small></div>
+            <div class="exp-step" data-stage="4"><span>5</span><b>Regreso</b><small>Consecuencias</small></div>
+          </div>
+
+          <div class="story-titlebar">
             <div>
-              <span class="section-kicker">SECUENCIA</span>
+              <span class="section-kicker">EXPEDICIÓN EN CURSO</span>
               <strong id="expeditionTitle">Prepara una party y elige un contrato</strong>
             </div>
-            <div id="expeditionPartyVisual" class="expedition-party-visual"></div>
-          </div>
-
-          <div class="expedition-steps">
-            <div class="exp-step" data-stage="0"><span>1</span>Viaje</div>
-            <div class="exp-step" data-stage="1"><span>2</span>Exploración</div>
-            <div class="exp-step" data-stage="2"><span>3</span>Encuentro</div>
-            <div class="exp-step" data-stage="3"><span>4</span>Campamento</div>
-            <div class="exp-step" data-stage="4"><span>5</span>Regreso</div>
-          </div>
-
-          <div class="expedition-scene">
-            <div id="expeditionStageIcon" class="stage-icon">🗺️</div>
-            <div class="stage-copy">
-              <span id="expeditionStageLabel" class="section-kicker">LISTO</span>
-              <h3 id="expeditionStageTitle">La próxima historia empieza aquí</h3>
-              <p id="expeditionStageText">La expedición se resolverá paso a paso.</p>
-              <div id="expeditionStageEffects" class="stage-effects"></div>
+            <div class="story-objective">
+              <span>Objetivo</span>
+              <b id="storyObjective">Completar el contrato y regresar con la party.</b>
             </div>
+            <span id="resultTag" class="tag">Sin expediciones</span>
           </div>
 
-          <div id="expeditionSummary" class="expedition-summary is-hidden"></div>
+          <div class="story-main">
+            <div id="storyScene" class="story-scene stage-travel">
+              <div class="story-scene-atmosphere"></div>
+              <div class="story-scene-mark story-mark-left">◈</div>
+              <div class="story-scene-mark story-mark-right">✦</div>
 
-          <div class="expedition-controls">
-            <button id="expeditionContinueBtn" type="button" class="primary is-hidden">Continuar →</button>
-            <button id="toggleReportBtn" type="button" class="secondary is-hidden">Ver relato completo</button>
+              <div class="story-scene-copy">
+                <span id="expeditionStageLabel" class="section-kicker">LISTO</span>
+                <h3 id="expeditionStageTitle">La próxima historia empieza aquí</h3>
+                <p id="expeditionStageText">La expedición se resolverá paso a paso.</p>
+              </div>
+
+              <div id="expeditionPartyVisual" class="story-party-portraits"></div>
+              <div id="expeditionStageIcon" class="story-stage-emblem">🗺️</div>
+            </div>
+
+            <aside class="story-event-column">
+              <div class="event-card">
+                <div class="event-card-head">
+                  <span id="storyEventIcon" class="event-card-icon">✦</span>
+                  <div>
+                    <span class="section-kicker">EVENTO ACTUAL</span>
+                    <h3 id="storyEventTitle">Esperando expedición</h3>
+                  </div>
+                </div>
+                <p id="storyEventText">Los acontecimientos importantes aparecerán aquí como cartas narrativas.</p>
+                <div id="expeditionStageEffects" class="event-effect-list"></div>
+                <blockquote id="storyQuote" class="story-quote">“Cada expedición añade una página a la historia del gremio.”</blockquote>
+              </div>
+
+              <div class="story-controls">
+                <button id="expeditionContinueBtn" type="button" class="primary story-continue is-hidden">Continuar →</button>
+                <button id="toggleReportBtn" type="button" class="secondary is-hidden">Ver relato completo</button>
+              </div>
+            </aside>
+          </div>
+
+          <div id="expeditionSummary" class="expedition-summary story-summary is-hidden"></div>
+
+          <div class="story-bottom">
+            <section class="story-bottom-panel">
+              <span class="section-kicker">EVENTOS DE LA ETAPA</span>
+              <div id="stageEventList" class="stage-event-list">
+                <div class="stage-event active">✦ El próximo acontecimiento aparecerá aquí.</div>
+                <div class="stage-event muted">? Por descubrir...</div>
+              </div>
+            </section>
+
+            <section class="story-bottom-panel">
+              <span class="section-kicker">CONSECUENCIAS RECIENTES</span>
+              <div id="recentConsequences" class="consequence-grid">
+                <div class="consequence-placeholder">Sin consecuencias todavía.</div>
+              </div>
+            </section>
+
+            <section class="story-bottom-panel story-log-panel">
+              <span class="section-kicker">REGISTRO DE LA EXPEDICIÓN</span>
+              <div id="storyLog" class="story-log">
+                <div class="story-log-row muted">La historia comenzará al enviar la party.</div>
+              </div>
+            </section>
           </div>
         </div>
 
-        <div id="report" class="report is-hidden"></div>
+        <div id="report" class="report story-full-report is-hidden"></div>
         <div id="reportActions" class="report-actions is-hidden">
           <button type="button" class="secondary" data-go="party">Revisar Party</button>
           <button type="button" class="secondary" data-go="chronicle">Ver Crónica</button>
