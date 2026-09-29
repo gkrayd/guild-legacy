@@ -3,10 +3,21 @@
 Guild Legacy is a mobile-landscape medieval fantasy guild simulation centered on autonomous expeditions, persistent adventurers, relationships, recovery and generational legacy.
 
 ## Version
-V1.0 — Guild Legacy Core Complete
+V1.1 — Balance & Playtest Pass
 
 ## Core loop
 Recruit adventurers -> form a party -> plan a mission -> watch an autonomous expedition -> review consequences -> improve the guild -> build relationships and careers -> retire veterans -> continue through future generations.
+
+## V1.1 additions
+- Campaign diagnostics panel for playtesting
+- Win-rate, economy, injury-frequency, relationship, level and campaign-age metrics
+- Balance notes generated from actual campaign outcomes
+- Adventurer titles earned from real history and accomplishments
+- Specializations now have mechanical party roles, not only power bonuses
+- Pre-mission success/risk estimate using the selected party and plan
+- Slower passive Bond/attraction growth so important relationships depend more on events and guild life
+- Persistent campaign statistics for future balance passes
+- V1.0 save compatibility
 
 ## Core systems
 - Mobile landscape interface
@@ -35,7 +46,7 @@ Recruit adventurers -> form a party -> plan a mission -> watch an autonomous exp
 Grounded medieval fantasy with meaningful consequences but not grimdark. Danger, injury and death can occur, but the overall experience emphasizes adventure, community, recovery, friendship, family and legacy.
 
 ## Visual status
-V1.0 is core-system complete, not final-art complete. Current graphics remain deliberately lightweight/placeholders so gameplay and simulation can be tested before the final visual production pass.
+The current build remains intentionally lightweight visually. Gameplay, simulation and balance are being validated before the final visual production pass, including the future expedition portraits discussed for each expedition stage.
 
 ## Web build
 https://gkrayd.github.io/guild-legacy/
