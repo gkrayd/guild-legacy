@@ -186,6 +186,41 @@
     return (DATA.specializations[hero.cls]||[]).find(s=>s.id===hero.specialization)||null;
   }
 
+  function heroTitles(hero){
+    const titles=[];
+    if((hero.generation||1)>1) titles.push('Heredero del Grifo');
+    if(hero.expeditions>=5) titles.push('Expedicionario');
+    if(hero.expeditions>=12) titles.push('Veterano del Grifo');
+    if(hero.wins>=10) titles.push('Compañero confiable');
+    if(hero.level>=6) titles.push(`Maestro ${specializationData(hero)?.name||hero.cls}`);
+    if((hero.missionTypes?.exploration||0)>=3) titles.push('Ojo del Camino');
+    if((hero.missionTypes?.arcane||0)>=3) titles.push('Conocedor de lo Arcano');
+    if((hero.missionTypes?.undead||0)>=3) titles.push('Guardián de las Criptas');
+    if((hero.missionTypes?.combat||0)>=5) titles.push('Curtido en batalla');
+    if((hero.children||[]).length) titles.push('Fundador de linaje');
+    if(hero.retired) titles.push('Veterano retirado');
+    return [...new Set(titles)].slice(0,5);
+  }
+
+  function specializationPartyModifiers(party,mission){
+    const out={success:0,injury:0,treasure:0,notes:[]};
+    party.forEach(hero=>{
+      const spec=specializationData(hero);
+      const e=spec?.effect||{};
+      if(e.success) out.success+=e.success;
+      if(e.partyInjury) out.injury+=e.partyInjury;
+      if(e.treasure) out.treasure+=e.treasure;
+      if(e.hardSuccess && mission.difficulty>=4) out.success+=e.hardSuccess;
+      if(e.arcaneSuccess && ['arcane','legendary'].includes(mission.type)) out.success+=e.arcaneSuccess;
+      if(e.explorationSuccess && ['exploration','escort'].includes(mission.type)) out.success+=e.explorationSuccess;
+      if(spec && Object.keys(e).length) out.notes.push(`${hero.name}: ${spec.name}`);
+    });
+    out.success=Math.min(out.success,0.14);
+    out.injury=Math.max(out.injury,-0.18);
+    out.treasure=Math.min(out.treasure,0.18);
+    return out;
+  }
+
   function relation(a,b){
     const key=pairKey(a,b);
     if(!state.relations[key]){
@@ -1055,6 +1090,49 @@
     if(screen==='legacy') renderLegacy();
   }
 
+  function renderDiagnostics(){
+    const stats=state.stats;
+    const missions=Math.max(0,stats.missions||0);
+    const wins=stats.wins||0;
+    const winRate=missions?Math.round(wins/missions*100):0;
+    const injuryRate=missions?((stats.injuries||0)/missions):0;
+    const net=(stats.goldEarned||0)-(stats.goldSpent||0);
+    const active=activeMembers();
+    const avgLevel=active.length?(active.reduce((sum,h)=>sum+h.level,0)/active.length):0;
+    const meaningful=Object.values(state.relations).filter(r=>
+      r.bond>=15||r.tension>=20||r.attraction>=20||r.romance||r.married
+    ).length;
+    const elapsed=(state.year-1)*90+(state.day-1);
+
+    $('winRateStat').textContent=missions?`${wins}/${missions} · ${winRate}%`:'Sin datos';
+    $('goldFlowStat').textContent=missions?`${net>=0?'+':''}${net} oro`:`${state.gold} actual`;
+    $('injuryRateStat').textContent=missions?`${(injuryRate).toFixed(1)} / misión`:'Sin datos';
+    $('relationshipStat').textContent=`${meaningful} vínculos`;
+    $('avgLevelStat').textContent=active.length?avgLevel.toFixed(1):'—';
+    $('campaignAgeStat').textContent=`${elapsed} días`;
+
+    const notes=[];
+    if(missions<4){
+      notes.push('Juega al menos 4 expediciones para que las señales de balance sean útiles.');
+    }else{
+      if(winRate>82) notes.push('Las victorias están siendo muy frecuentes; prueba contratos más difíciles o planes menos conservadores.');
+      else if(winRate<42) notes.push('La tasa de éxito es baja; revisa composición, suministros y dificultad.');
+      else notes.push('La tasa de victorias está dentro de un rango saludable.');
+
+      if(injuryRate>1.0) notes.push('Se están acumulando muchas heridas por misión.');
+      else if(injuryRate<0.15) notes.push('Las heridas aparecen muy poco; el riesgo puede sentirse débil.');
+      else notes.push('La frecuencia de heridas parece razonable.');
+
+      const netPerMission=net/missions;
+      if(netPerMission>350) notes.push('La economía está creciendo muy rápido.');
+      else if(netPerMission<-80) notes.push('La campaña está perdiendo oro de forma sostenida.');
+      else notes.push('El flujo de oro no muestra una desviación fuerte.');
+
+      if(missions>=10 && meaningful<2) notes.push('Las relaciones están evolucionando lentamente para la cantidad de expediciones jugadas.');
+    }
+    $('balanceNotes').textContent=notes.join(' ');
+  }
+
   function renderHeader(){
     $('goldStat').textContent=state.gold;
     $('dayStat').textContent=state.day;
@@ -1153,10 +1231,14 @@
     $('detailMeta').textContent=`${spec?.name||h.cls} · Nv.${h.level} · ${h.age} años · Gen.${h.generation||1}`;
     $('detailStatusBadge').textContent=h.retired?'Veterano retirado':h.injury?`${h.injury.name} · ${h.injury.daysLeft} días`:'Activo y sano';
 
+    const titles=heroTitles(h);
     $('detailIdentity').innerHTML=`
       <span class="detail-pill"><b>Origen</b><br>${h.origin}</span>
       <span class="detail-pill"><b>Motivación</b><br>${mot.name}<br><span class="tiny">${mot.desc}</span></span>
-      <span class="detail-pill"><b>Rasgos</b><br>${h.traits.join(' · ')}</span>`;
+      <span class="detail-pill"><b>Rasgos</b><br>${h.traits.join(' · ')}</span>
+      <span class="detail-pill"><b>Títulos e hitos</b><br>
+        <span class="title-list">${titles.length?titles.map(t=>`<span class="title-badge">${t}</span>`).join(''):'<span class="tiny">Todavía no ha ganado ningún título.</span>'}</span>
+      </span>`;
 
     $('detailState').innerHTML=`
       <span class="detail-pill"><b>XP</b> ${h.xp}/${threshold(h.level)}</span>
@@ -1374,6 +1456,7 @@
     renderHeader();
     renderApplicants();
     renderFacilities();
+    renderDiagnostics();
     renderAdventurers();
     renderRoster();
     renderPartySummary();
