@@ -930,10 +930,11 @@
 
     const syn=partySynergy(party);
     const chemistry=partyChemistry(party);
+    const roleMods=specializationPartyModifiers(party,mission);
     const libBonus=(state.facilities.library||0)*0.015;
     const rawPower=party.reduce((sum,h)=>sum+heroPower(h),0)+syn.bonus;
     const target=mission.difficulty*25+party.length*8;
-    const chance=clamp(0.46+(rawPower-target)/100+plan.chance+libBonus,0.12,0.95);
+    const chance=clamp(0.46+(rawPower-target)/100+plan.chance+libBonus+roleMods.success,0.12,0.95);
     const success=Math.random()<chance;
     const days=Math.max(1,mission.days+plan.days);
     const extras={bonusGold:0};
@@ -956,19 +957,20 @@
     addStageEffect(stages[0],`${plan.pace.name} · ${plan.priority.name}`,'');
     if(plan.cost) addStageEffect(stages[0],`Suministros: -${plan.cost} oro`,'');
     syn.notes.forEach(n=>addStageEffect(stages[0],n,'good'));
+    roleMods.notes.forEach(n=>addStageEffect(stages[0],n,'good'));
 
     applyFlavor(stages[1],'exploration',lines);
     applyClassMoment(party,stages[1],lines);
     applyTraitMoment(party,stages[1],lines,extras);
 
-    combatEvent(party,mission,success,lines,stages[2],plan.injury);
+    combatEvent(party,mission,success,lines,stages[2],plan.injury+roleMods.injury);
 
     applyFlavor(stages[3],'camp',lines);
     personalityEvent(party,lines,stages[3]);
     if(party.length>=3&&oneIn(3)) applyTraitMoment(party,stages[3],lines,extras);
 
     let baseGain=Math.round(mission.reward*(success?(0.85+Math.random()*0.35):(0.1+Math.random()*0.15))*plan.reward);
-    if(state.planning.priority==='treasure'&&Math.random()<0.45+plan.treasure){
+    if((state.planning.priority==='treasure'||roleMods.treasure>0)&&Math.random()<0.32+plan.treasure+roleMods.treasure){
       const treasure=25+Math.floor(Math.random()*(35+mission.difficulty*20));
       extras.bonusGold+=treasure;
     }
@@ -1008,9 +1010,9 @@
     for(let i=0;i<party.length;i++){
       for(let j=i+1;j<party.length;j++){
         const social=(traitScore(party[i],'social')+traitScore(party[j],'social'))/2;
-        const bond=Math.max(0,2+Math.round(social))+tavern;
+        const bond=Math.max(0,1+Math.round(social/2))+Math.min(1,tavern);
         const current=relation(party[i].id,party[j].id);
-        const attraction=current.bond>=18 && Math.random()<(0.32+tavern*0.05) ? 3+tavern : (oneIn(14)?1:0);
+        const attraction=current.bond>=22 && Math.random()<(0.16+tavern*0.04) ? 2+Math.min(2,tavern) : (oneIn(22)?1:0);
         changeRelation(party[i].id,party[j].id,bond,success?0:1,attraction);
       }
     }
