@@ -958,6 +958,7 @@
     if(plan.cost) addStageEffect(stages[0],`Suministros: -${plan.cost} oro`,'');
     syn.notes.forEach(n=>addStageEffect(stages[0],n,'good'));
     roleMods.notes.forEach(n=>addStageEffect(stages[0],n,'good'));
+    addStageEffect(stages[0],`Química: ${chemistry.label}`,chemistry.score>=10?'bond':'');
 
     applyFlavor(stages[1],'exploration',lines);
     applyClassMoment(party,stages[1],lines);
@@ -1381,8 +1382,27 @@
     const p=planningModifiers();
     const pct=Math.round(p.chance*100);
     const risk=Math.round(p.injury*100);
+
+    const party=state.selected.map(member).filter(canDeploy);
+    const mission=DATA.missions.find(m=>m.id===$('missionSelect').value);
+    let estimate='';
+    if(party.length>=2&&mission){
+      const syn=partySynergy(party);
+      const roleMods=specializationPartyModifiers(party,mission);
+      const libBonus=(state.facilities.library||0)*0.015;
+      const rawPower=party.reduce((sum,h)=>sum+heroPower(h),0)+syn.bonus;
+      const target=mission.difficulty*25+party.length*8;
+      const chance=clamp(0.46+(rawPower-target)/100+p.chance+libBonus+roleMods.success,0.12,0.95);
+      const finalRisk=p.injury+roleMods.injury;
+      estimate=`<br><b>Estimación con esta party:</b> ${Math.round(chance*100)}% de éxito · riesgo ${Math.round(finalRisk*100)>=0?'+':''}${Math.round(finalRisk*100)}%`;
+      if(roleMods.notes.length) estimate+=`<br><span class="tiny">Especializaciones activas: ${roleMods.notes.join(' · ')}</span>`;
+    }else{
+      estimate='<br><span class="tiny">Forma una party de al menos 2 miembros para ver una estimación completa.</span>';
+    }
+
     $('planSummary').innerHTML=`<b>Plan del maestro del gremio</b><br>
-      Éxito ${pct>=0?'+':''}${pct}% · Riesgo de herida ${risk>=0?'+':''}${risk}% · Recompensa ×${p.reward.toFixed(2)} · Coste ${p.cost} oro<br>
+      Éxito ${pct>=0?'+':''}${pct}% · Riesgo de herida ${risk>=0?'+':''}${risk}% · Recompensa ×${p.reward.toFixed(2)} · Coste ${p.cost} oro
+      ${estimate}<br>
       <span class="tiny">${p.pace.desc} ${p.priority.desc} ${p.supply.desc}</span>`;
     saveState(false);
   }
@@ -1524,7 +1544,7 @@
   });
 
   $('resetBtn').addEventListener('click',()=>{
-    if(!window.confirm('¿Reiniciar toda la partida V1.0 y borrar el guardado local?')) return;
+    if(!window.confirm('¿Reiniciar toda la partida V1.1 y borrar el guardado local?')) return;
     localStorage.removeItem(SAVE_KEY);
     localStorage.removeItem(LEGACY_SAVE_KEY);
     state=freshState();
