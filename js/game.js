@@ -37,7 +37,11 @@
       planning:{pace:'balanced',priority:'objective',supply:'none'},
       children:[],
       lastGuildEvent:'El gremio abre sus puertas por primera vez.',
-      regionNotices:['frontier']
+      regionNotices:['frontier'],
+      stats:{
+        missions:0,wins:0,losses:0,goldEarned:0,goldSpent:0,
+        injuries:0,deaths:0,recruits:0,facilitySpent:0,supplySpent:0,guildEvents:0
+      }
     };
   }
 
@@ -81,6 +85,8 @@
     h.spouseId=h.spouseId||null;
     h.children=Array.isArray(h.children)?h.children:[];
     h.motivationProgress=h.motivationProgress||0;
+    h.wins=h.wins||0;
+    h.missionTypes=h.missionTypes||{};
 
     if(typeof h.injury==='number' && h.injury>0){
       const template=DATA.injuries[Math.min(DATA.injuries.length-1,Math.max(0,h.injury*2-1))];
@@ -137,6 +143,7 @@
     state.children=Array.isArray(state.children)?state.children:[];
     state.chronicle=Array.isArray(state.chronicle)?state.chronicle:[];
     state.regionNotices=Array.isArray(state.regionNotices)?state.regionNotices:['frontier'];
+    state.stats={...freshState().stats,...(state.stats||{})};
     state.roster=(state.roster||[]).map(h=>normalizeHero(h,false));
     state.applicants=(state.applicants||[]).map(h=>normalizeHero(h,true));
     state.selected=(state.selected||[]).filter(id=>state.roster.some(h=>h.id===id && h.alive!==false && !h.retired));
@@ -256,6 +263,8 @@
       return;
     }
     state.gold-=a.cost;
+    state.stats.goldSpent+=a.cost;
+    state.stats.recruits++;
     const h=normalizeHero({...a,level:1,xp:0,expeditions:0,alive:true,retired:false,memory:[]},false);
     if(a.legacy){
       addMemory(h,'entró al gremio siguiendo el legado de su familia.');
@@ -359,6 +368,7 @@
     }else{
       hero.injury.daysLeft+=Math.max(1,Math.floor(template.daysLeft/2));
     }
+    state.stats.injuries++;
     addMemory(hero,`sufrió ${hero.injury.name.toLowerCase()} durante una expedición.`);
     return hero.injury;
   }
@@ -382,9 +392,12 @@
     const e=rand(DATA.guildLifeEvents);
     const heroes=activeMembers();
     let text=e.text;
+    state.stats.guildEvents++;
 
     if(e.gold){
       state.gold=Math.max(0,state.gold+e.gold);
+      if(e.gold>0) state.stats.goldEarned+=e.gold;
+      else state.stats.goldSpent+=Math.abs(e.gold);
       text+=` ${e.gold>0?'+':''}${e.gold} oro.`;
     }
     if(e.rep){
@@ -612,6 +625,8 @@
     const cost=info.costs[level];
     if(state.gold<cost){notice(`Necesitas ${cost} oro.`);return;}
     state.gold-=cost;
+    state.stats.goldSpent+=cost;
+    state.stats.facilitySpent+=cost;
     state.facilities[key]=level+1;
     addChronicle(`${info.name} mejora a nivel ${level+1}.`);
     saveState(false);
@@ -875,6 +890,8 @@
     const plan=planningModifiers();
     if(state.gold<plan.cost){notice(`Necesitas ${plan.cost} oro para esos suministros.`);return;}
     state.gold-=plan.cost;
+    state.stats.goldSpent+=plan.cost;
+    state.stats.supplySpent+=plan.cost;
 
     const syn=partySynergy(party);
     const chemistry=partyChemistry(party);
@@ -922,6 +939,10 @@
     }
     const gain=baseGain+extras.bonusGold;
     state.gold+=gain;
+    state.stats.goldEarned+=gain;
+    state.stats.missions++;
+    if(success) state.stats.wins++;
+    else state.stats.losses++;
 
     const oldRep=state.rep;
     if(success) state.rep+=4+mission.difficulty*2;
@@ -929,6 +950,8 @@
 
     party.forEach(h=>{
       h.expeditions++;
+      h.missionTypes[mission.type]=(h.missionTypes[mission.type]||0)+1;
+      if(success) h.wins++;
       const training=state.facilities.training||0;
       const xp=Math.round((success?38+mission.difficulty*23:18+mission.difficulty*10)*(1+training*0.1));
       h.xp+=xp;
@@ -963,6 +986,7 @@
       if(danger.length&&Math.random()<0.035+mission.difficulty*0.005){
         lost=rand(danger);
         lost.alive=false;
+        state.stats.deaths++;
         state.selected=state.selected.filter(id=>id!==lost.id);
         addChronicle(`${lost.name} murió durante ${mission.name}.`);
         addMemory(lost,`su última expedición fue ${mission.name}.`);
@@ -1387,6 +1411,7 @@
   $('refreshApplicantsBtn').addEventListener('click',()=>{
     if(state.gold<20){notice('No tienes 20 oro.');return;}
     state.gold-=20;
+    state.stats.goldSpent+=20;
     advanceDays(1);
     state.applicants=[];
     refillApplicants();
