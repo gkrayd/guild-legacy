@@ -228,7 +228,7 @@
     const r=changeRelation(actor.id,target.id,bond,tension,attraction);
     lines.push(`<p class="event"><b>Evento:</b> ${text}</p>`);
 
-    if(stage && !stage.text) stage.text=text;
+    if(stage) stage.text=text;
     if(bond) addStageEffect(stage,`${actor.name} ↔ ${target.name} · Bond ${bond>0?'+':''}${bond}`,'bond');
     if(tension) addStageEffect(stage,`${actor.name} ↔ ${target.name} · Tensión +${tension}`,'bad');
     if(attraction) addStageEffect(stage,`${actor.name} ↔ ${target.name} · Afinidad +${attraction}`,'bond');
