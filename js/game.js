@@ -193,6 +193,87 @@
     stage.effects.push({text,kind});
   }
 
+  function stageFlavor(type){
+    const pool=DATA.expeditionEvents?.[type]||[];
+    return pool.length?rand(pool):null;
+  }
+
+  function applyFlavor(stage,type,lines){
+    const event=stageFlavor(type);
+    if(!event) return;
+    stage.icon=event.icon||stage.icon;
+    stage.title=event.title||stage.title;
+    stage.text=event.text||stage.text;
+    lines.push(`<p><b>${event.title}</b> · ${event.text}</p>`);
+  }
+
+  function applyClassMoment(party,stage,lines){
+    const eligible=party.filter(h=>DATA.expeditionEvents?.classMoments?.[h.cls]?.length);
+    if(!eligible.length || Math.random()>0.78) return;
+    const hero=rand(eligible);
+    const moment=rand(DATA.expeditionEvents.classMoments[hero.cls]);
+    const text=`${hero.name} ${moment}.`;
+    stage.icon=DATA.classes[hero.cls].icon;
+    stage.title=`${hero.name} toma la iniciativa`;
+    stage.text=text;
+    addStageEffect(stage,`${hero.cls} · ${DATA.classes[hero.cls].ability}`,'good');
+    lines.push(`<p class="event"><b>Momento de clase:</b> ${text}</p>`);
+  }
+
+  function applyTraitMoment(party,stage,lines,extras){
+    const actor=rand(party);
+    const target=rand(party.filter(h=>h.id!==actor.id));
+    if(!actor || !target) return;
+    const traits=actor.traits||[];
+
+    if(traits.includes('Curioso') && Math.random()<0.55){
+      const bonus=12+Math.floor(Math.random()*19);
+      extras.bonusGold+=bonus;
+      const text=`${actor.name} insiste en revisar un rincón que el resto habría pasado por alto y encuentra un pequeño escondite.`;
+      stage.text=text;
+      addStageEffect(stage,`Hallazgo: +${bonus} oro`,'good');
+      lines.push(`<p class="event"><b>Curiosidad:</b> ${text}</p>`);
+      return;
+    }
+
+    if(traits.includes('Bromista') && Math.random()<0.55){
+      changeRelation(actor.id,target.id,4,0,0);
+      const text=`${actor.name} consigue relajar a ${target.name} con una historia exagerada sobre una vieja aventura.`;
+      stage.text=text;
+      addStageEffect(stage,`${actor.name} ↔ ${target.name} · Bond +4`,'bond');
+      lines.push(`<p class="event"><b>Buen ánimo:</b> ${text}</p>`);
+      return;
+    }
+
+    if((traits.includes('Leal')||traits.includes('Compasivo')) && Math.random()<0.5){
+      changeRelation(actor.id,target.id,4,0,0);
+      const text=`${actor.name} se asegura de que ${target.name} esté bien antes de pensar en descansar.`;
+      stage.text=text;
+      addStageEffect(stage,`${actor.name} ↔ ${target.name} · Bond +4`,'bond');
+      lines.push(`<p class="event"><b>Compañerismo:</b> ${text}</p>`);
+      return;
+    }
+
+    if(traits.includes('Codicioso') && Math.random()<0.45){
+      const bonus=15+Math.floor(Math.random()*21);
+      extras.bonusGold+=bonus;
+      changeRelation(actor.id,target.id,-2,4,0);
+      const text=`${actor.name} encuentra unas monedas y tarda demasiado en decidir si debía compartirlas con el grupo.`;
+      stage.text=text;
+      addStageEffect(stage,`+${bonus} oro`,'good');
+      addStageEffect(stage,`${actor.name} ↔ ${target.name} · Tensión +4`,'bad');
+      lines.push(`<p class="event"><b>Tentación:</b> ${text}</p>`);
+    }
+  }
+
+  function setEncounterFlavor(mission,stage){
+    const foes=DATA.expeditionEvents?.encounters?.[mission.id]||[];
+    if(!foes.length) return;
+    const foe=rand(foes);
+    stage.title=`Encuentro: ${foe}`;
+    stage.text=`La party se topa con ${foe}. Cada miembro reacciona según su experiencia y personalidad.`;
+  }
+
   function personalityEvent(party,lines,stage){
     const actor=rand(party);
     const target=rand(party.filter(x=>x.id!==actor.id));
