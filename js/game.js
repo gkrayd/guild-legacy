@@ -440,12 +440,13 @@
     const success=Math.random()<chance;
     const lines=[];
     const heroResults=[];
+    const extras={bonusGold:0};
 
     const stages=[
       {
         icon:'🗺️',label:'ETAPA 1 · VIAJE',title:`Rumbo a ${mission.name}`,
         text:`${party.map(x=>x.name).join(', ')} dejan atrás el gremio y comienzan un viaje de ${mission.days} días.`,
-        effects:[{text:`Éxito estimado: ${Math.round(chance*100)}%`,kind:''}]
+        effects:[{text:`Destino: ${mission.name}`,kind:''},{text:`Éxito estimado: ${Math.round(chance*100)}%`,kind:''}]
       },
       {
         icon:'🔎',label:'ETAPA 2 · EXPLORACIÓN',title:'El grupo se interna en la zona',
@@ -458,8 +459,8 @@
         effects:[]
       },
       {
-        icon:'🔥',label:'ETAPA 4 · CAMPAMENTO',title:'Tiempo para contar las heridas',
-        text:'Después del peligro, el grupo descansa y evalúa lo aprendido.',
+        icon:'🔥',label:'ETAPA 4 · CAMPAMENTO',title:'Tiempo para descansar',
+        text:'Después del peligro, el grupo comparte un momento lejos del gremio.',
         effects:[]
       },
       {
@@ -469,37 +470,48 @@
       }
     ];
 
-    if(syn.notes.length){
-      syn.notes.forEach(note=>addStageEffect(stages[0],note,'good'));
-    }
-
     lines.push(`<p><b>${mission.name}</b></p>`);
     lines.push(`<p class="muted">${party.map(x=>x.name).join(', ')} parten durante ${mission.days} días.</p>`);
     lines.push(`<p>Probabilidad estimada de éxito: <b>${Math.round(chance*100)}%</b>${syn.notes.length?' · Ventajas: '+syn.notes.join(', '):''}</p>`);
 
-    personalityEvent(party,lines,stages[1]);
-    if(party.length>=3 && oneIn(2)) personalityEvent(party,lines,stages[1]);
-
-    combatEvent(party,success,lines,stages[2]);
-    if(success){
-      stages[2].title='La party supera el encuentro';
-      addStageEffect(stages[2],'Objetivo asegurado','good');
-    }else{
-      stages[2].title='La situación obliga a retirarse';
-      addStageEffect(stages[2],'Retirada organizada','bad');
+    applyFlavor(stages[0],'travel',lines);
+    addStageEffect(stages[0],`Destino: ${mission.name}`,'');
+    if(syn.notes.length){
+      syn.notes.forEach(note=>addStageEffect(stages[0],note,'good'));
     }
 
-    let gain;
+    applyFlavor(stages[1],'exploration',lines);
+    applyClassMoment(party,stages[1],lines);
+    applyTraitMoment(party,stages[1],lines,extras);
+
+    setEncounterFlavor(mission,stages[2]);
+    combatEvent(party,success,lines,stages[2]);
+    addStageEffect(stages[2],success?'Objetivo asegurado':'Retirada organizada',success?'good':'bad');
+
+    applyFlavor(stages[3],'camp',lines);
+    personalityEvent(party,lines,stages[3]);
+    if(party.length>=3 && oneIn(3)){
+      applyTraitMoment(party,stages[3],lines,extras);
+    }
+
+    let baseGain;
     if(success){
-      gain=Math.round(mission.reward*(0.85+Math.random()*0.35));
-      state.gold+=gain;
+      baseGain=Math.round(mission.reward*(0.85+Math.random()*0.35));
       state.rep+=4+mission.difficulty*2;
+    }else{
+      baseGain=Math.round(mission.reward*(0.10+Math.random()*0.15));
+      state.rep=Math.max(0,state.rep-1);
+    }
+    const gain=baseGain+extras.bonusGold;
+    state.gold+=gain;
+
+    if(success){
       lines.push(`<p class="good"><b>✓ La misión tiene éxito · +${gain} oro</b></p>`);
     }else{
-      gain=Math.round(mission.reward*(0.10+Math.random()*0.15));
-      state.gold+=gain;
-      state.rep=Math.max(0,state.rep-1);
       lines.push(`<p class="bad"><b>✕ La party abandona la misión · recupera ${gain} oro</b></p>`);
+    }
+    if(extras.bonusGold){
+      lines.push(`<p class="good">Hallazgos durante la expedición: +${extras.bonusGold} oro adicional.</p>`);
     }
 
     party.forEach(h=>{
@@ -508,6 +520,7 @@
       h.expeditions++;
       const xp=success?38+mission.difficulty*23:18+mission.difficulty*10;
       h.xp+=xp;
+
       while(h.xp>=threshold(h.level)){
         h.xp-=threshold(h.level);
         h.level++;
@@ -575,10 +588,20 @@
       }
     });
 
-    stages[4].text=success
-      ? `La party vuelve con noticias de victoria y ${gain} monedas de oro para el gremio.`
-      : `La party vuelve antes de lo previsto. Recuperaron ${gain} monedas de oro y tendrán tiempo para recuperarse.`;
+    const returnVariants=success
+      ? [
+          `La party cruza las puertas del gremio con el objetivo cumplido y ${gain} monedas de oro.`,
+          `Al caer la tarde, el grupo vuelve al Grifo de Plata con buenas noticias y ${gain} monedas de oro.`,
+          `Los aventureros regresan cansados pero satisfechos. La misión dejó ${gain} monedas para el gremio.`
+        ]
+      : [
+          `La party regresa antes de lo esperado. No lograron el objetivo, pero vuelven juntos con ${gain} monedas recuperadas.`,
+          `Las puertas del gremio se abren para recibir al grupo. La misión falló, aunque consiguieron recuperar ${gain} monedas.`,
+          `El regreso es más silencioso de lo habitual. Habrá otra oportunidad; esta vez vuelven con ${gain} monedas.`
+        ];
+    stages[4].text=rand(returnVariants);
     addStageEffect(stages[4],`+${gain} oro`,'good');
+    if(extras.bonusGold) addStageEffect(stages[4],`Hallazgos: +${extras.bonusGold}`,'good');
     addStageEffect(stages[4],`Reputación: ${state.rep}`,success?'good':'');
 
     const summary=[
@@ -594,6 +617,15 @@
       },
       ...heroResults
     ];
+
+    if(extras.bonusGold){
+      summary.splice(2,0,{
+        title:'Hallazgo',
+        text:`+${extras.bonusGold} oro encontrado durante la expedición`,
+        kind:'good'
+      });
+    }
+
     if(lost){
       summary.push({title:`☠ ${lost.name}`,text:'No regresó de la expedición.',kind:'bad'});
     }
