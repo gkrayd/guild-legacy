@@ -6,6 +6,7 @@
   let nextId = 1;
   let currentScreen = 'guild';
   let currentDetailId = null;
+  let expeditionView = null;
 
   const freshState = () => ({
     gold:1000, day:1, year:1, rep:0, missionsDone:0,
@@ -187,7 +188,12 @@
     })[0]||rand(options);
   }
 
-  function personalityEvent(party,lines){
+  function addStageEffect(stage,text,kind=''){
+    if(!stage) return;
+    stage.effects.push({text,kind});
+  }
+
+  function personalityEvent(party,lines,stage){
     const actor=rand(party);
     const target=rand(party.filter(x=>x.id!==actor.id));
     if(!target) return;
@@ -196,49 +202,145 @@
     const t=actor.traits;
 
     if(t.includes('Protector')||t.includes('Leal')||t.includes('Compasivo')){
-      text=`${actor.name} vio a ${target.name} en peligro y abandonó su posición para protegerle.`;
+      text=\`\${actor.name} vio a \${target.name} en peligro y abandonó su posición para protegerle.\`;
       bond=7; attraction=oneIn(4)?3:0;
     }else if(t.includes('Impulsivo')){
-      text=`${actor.name} cargó sin esperar al resto. ${target.name} tuvo que intervenir para evitar un desastre.`;
+      text=\`\${actor.name} cargó sin esperar al resto. \${target.name} tuvo que intervenir para evitar un desastre.\`;
       bond=1; tension=7;
     }else if(t.includes('Codicioso')){
-      text=`${actor.name} encontró una bolsa de monedas y trató de ocultarla. ${target.name} se dio cuenta.`;
+      text=\`\${actor.name} encontró una bolsa de monedas y trató de ocultarla. \${target.name} se dio cuenta.\`;
       bond=-3; tension=9;
     }else if(t.includes('Bromista')){
-      text=`Durante el campamento, ${actor.name} logró hacer reír a ${target.name} después de un día difícil.`;
+      text=\`Durante el campamento, \${actor.name} logró hacer reír a \${target.name} después de un día difícil.\`;
       bond=6; attraction=oneIn(5)?4:0;
     }else if(t.includes('Curioso')){
-      text=`${actor.name} insistió en investigar un pasaje oculto. ${target.name} decidió acompañarle.`;
+      text=\`\${actor.name} insistió en investigar un pasaje oculto. \${target.name} decidió acompañarle.\`;
       bond=4; tension=oneIn(5)?3:0;
     }else if(t.includes('Ambicioso')){
-      text=`${actor.name} intentó quedarse con el mérito de una victoria que ${target.name} consideraba compartida.`;
+      text=\`\${actor.name} intentó quedarse con el mérito de una victoria que \${target.name} consideraba compartida.\`;
       tension=6;
     }else{
-      text=`${actor.name} y ${target.name} compartieron una larga guardia nocturna y hablaron sobre sus vidas antes del gremio.`;
+      text=\`\${actor.name} y \${target.name} compartieron una larga guardia y hablaron sobre sus vidas antes del gremio.\`;
       bond=5; attraction=oneIn(6)?4:0;
     }
 
     const before=relation(actor.id,target.id).status;
     const r=changeRelation(actor.id,target.id,bond,tension,attraction);
-    lines.push(`<p class="event"><b>Evento:</b> ${text}</p>`);
+    lines.push(\`<p class="event"><b>Evento:</b> \${text}</p>\`);
+
+    if(stage && !stage.text) stage.text=text;
+    if(bond) addStageEffect(stage,\`\${actor.name} ↔ \${target.name} · Bond \${bond>0?'+':''}\${bond}\`,'bond');
+    if(tension) addStageEffect(stage,\`\${actor.name} ↔ \${target.name} · Tensión +\${tension}\`,'bad');
+    if(attraction) addStageEffect(stage,\`\${actor.name} ↔ \${target.name} · Afinidad +\${attraction}\`,'bond');
+
     if(before!==r.status){
-      lines.push(`<p>Relación: ${actor.name} ↔ ${target.name} ahora son <b>${r.status}</b>.</p>`);
+      lines.push(\`<p>Relación: \${actor.name} ↔ \${target.name} ahora son <b>\${r.status}</b>.</p>\`);
+      addStageEffect(stage,\`Nueva relación: \${r.status}\`,'good');
     }
   }
 
-  function combatEvent(party,success,lines){
+  function combatEvent(party,success,lines,stage){
     const endangered=rand(party);
     const rescuer=chooseRescuer(party,endangered);
     if(!rescuer) return;
 
     const drive=traitScore(rescuer,'social')+relation(rescuer.id,endangered.id).bond/15;
     if(drive>=3 || rescuer.cls==='Paladin' || rescuer.cls==='Guerrero'){
-      lines.push(`<p>${DATA.classes[rescuer.cls].icon} ${rescuer.name} utilizó <b>${DATA.classes[rescuer.cls].ability}</b> cuando ${endangered.name} quedó en peligro.</p>`);
+      const text=\`\${rescuer.name} utilizó \${DATA.classes[rescuer.cls].ability} cuando \${endangered.name} quedó en peligro.\`;
+      lines.push(\`<p>\${DATA.classes[rescuer.cls].icon} \${rescuer.name} utilizó <b>\${DATA.classes[rescuer.cls].ability}</b> cuando \${endangered.name} quedó en peligro.</p>\`);
       changeRelation(rescuer.id,endangered.id,6,0,oneIn(6)?3:0);
-      if(!success && Math.random()<0.45) rescuer.injury=clamp(rescuer.injury+1,0,3);
+      if(stage) stage.text=text;
+      addStageEffect(stage,\`\${rescuer.name} ↔ \${endangered.name} · Bond +6\`,'bond');
+      if(!success && Math.random()<0.45){
+        rescuer.injury=clamp(rescuer.injury+1,0,3);
+        addStageEffect(stage,\`\${rescuer.name} resulta herido\`,'bad');
+      }
     }else{
-      lines.push(`<p>${endangered.name} quedó aislado durante el combate y el grupo tardó en reaccionar.</p>`);
+      const text=\`\${endangered.name} quedó aislado durante el combate y el grupo tardó en reaccionar.\`;
+      lines.push(\`<p>\${text}</p>\`);
       endangered.injury=clamp(endangered.injury+1,0,3);
+      if(stage) stage.text=text;
+      addStageEffect(stage,\`\${endangered.name} resulta herido\`,'bad');
+    }
+  }
+
+  function setExpeditionControls(running){
+    $('dispatchBtn').disabled=running;
+    $('missionSelect').disabled=running;
+    document.querySelectorAll('.main-nav .nav-btn').forEach(btn=>btn.disabled=running);
+  }
+
+  function partyTokens(party){
+    return party.map(h=>\`<div class="party-token"><span class="token-icon">\${DATA.classes[h.cls].icon}</span>\${h.name}</div>\`).join('');
+  }
+
+  function renderExpeditionStage(){
+    if(!expeditionView) return;
+    const stage=expeditionView.stages[expeditionView.index];
+
+    $('expeditionTheater').classList.add('running');
+    $('expeditionTheater').classList.remove('complete');
+    $('expeditionTitle').textContent=expeditionView.mission.name;
+    $('expeditionPartyVisual').innerHTML=partyTokens(expeditionView.party);
+
+    document.querySelectorAll('.exp-step').forEach((el,i)=>{
+      el.classList.toggle('done',i<expeditionView.index);
+      el.classList.toggle('active',i===expeditionView.index);
+    });
+
+    $('expeditionStageIcon').textContent=stage.icon;
+    $('expeditionStageLabel').textContent=stage.label;
+    $('expeditionStageTitle').textContent=stage.title;
+    $('expeditionStageText').textContent=stage.text;
+    $('expeditionStageEffects').innerHTML=stage.effects.map(e=>\`<span class="effect-chip \${e.kind||''}">\${e.text}</span>\`).join('');
+
+    $('expeditionSummary').classList.add('is-hidden');
+    $('expeditionContinueBtn').classList.remove('is-hidden');
+    $('toggleReportBtn').classList.add('is-hidden');
+    $('report').classList.add('is-hidden');
+    $('reportActions').classList.add('is-hidden');
+    $('expeditionContinueBtn').textContent=expeditionView.index===expeditionView.stages.length-1?'Ver resumen →':'Continuar →';
+  }
+
+  function finishExpeditionPresentation(){
+    if(!expeditionView) return;
+
+    document.querySelectorAll('.exp-step').forEach(el=>{
+      el.classList.remove('active');
+      el.classList.add('done');
+    });
+
+    $('expeditionTheater').classList.remove('running');
+    $('expeditionTheater').classList.add('complete');
+    $('expeditionStageIcon').textContent=expeditionView.success?'🏆':'🏠';
+    $('expeditionStageLabel').textContent='EXPEDICIÓN COMPLETA';
+    $('expeditionStageTitle').textContent=expeditionView.success?'La party regresa victoriosa':'La party consigue regresar';
+    $('expeditionStageText').textContent=expeditionView.success
+      ? 'La misión ha terminado. Revisa cómo cambió cada aventurero.'
+      : 'No lograron el objetivo, pero la historia del grupo continúa.';
+    $('expeditionStageEffects').innerHTML='';
+
+    $('expeditionSummary').innerHTML=expeditionView.summary.map(item=>\`
+      <div class="summary-card \${item.kind||''}">
+        <strong>\${item.title}</strong>
+        \${item.text}
+      </div>
+    \`).join('');
+    $('expeditionSummary').classList.remove('is-hidden');
+
+    $('expeditionContinueBtn').classList.add('is-hidden');
+    $('toggleReportBtn').classList.remove('is-hidden');
+    $('reportActions').classList.remove('is-hidden');
+    setExpeditionControls(false);
+  }
+
+  function advanceExpedition(){
+    if(!expeditionView) return;
+    if(expeditionView.index<expeditionView.stages.length-1){
+      expeditionView.index++;
+      renderExpeditionStage();
+    }else{
+      finishExpeditionPresentation();
     }
   }
 
@@ -251,65 +353,124 @@
 
     const mission=DATA.missions.find(x=>x.id===$('missionSelect').value)||DATA.missions[0];
     const syn=partySynergy(party);
-    const rawPower=party.reduce((s,h)=>s+DATA.classes[h.cls].power+h.level*3-h.injury*5+traitScore(h,'risk'),0)+syn.bonus;
+    const rawPower=party.reduce((sum,h)=>sum+DATA.classes[h.cls].power+h.level*3-h.injury*5+traitScore(h,'risk'),0)+syn.bonus;
     const target=mission.difficulty*25+party.length*8;
     const chance=clamp(0.46+(rawPower-target)/100,0.15,0.93);
     const success=Math.random()<chance;
     const lines=[];
+    const heroResults=[];
 
-    lines.push(`<p><b>${mission.name}</b></p>`);
-    lines.push(`<p class="muted">${party.map(x=>x.name).join(', ')} parten durante ${mission.days} días.</p>`);
-    lines.push(`<p>Probabilidad estimada de éxito: <b>${Math.round(chance*100)}%</b>${syn.notes.length?' · Ventajas: '+syn.notes.join(', '):''}</p>`);
+    const stages=[
+      {
+        icon:'🗺️',label:'ETAPA 1 · VIAJE',title:\`Rumbo a \${mission.name}\`,
+        text:\`\${party.map(x=>x.name).join(', ')} dejan atrás el gremio y comienzan un viaje de \${mission.days} días.\`,
+        effects:[{text:\`Éxito estimado: \${Math.round(chance*100)}%\`,kind:''}]
+      },
+      {
+        icon:'🔎',label:'ETAPA 2 · EXPLORACIÓN',title:'El grupo se interna en la zona',
+        text:'El camino obliga a la party a tomar decisiones y depender unos de otros.',
+        effects:[]
+      },
+      {
+        icon:'⚔️',label:'ETAPA 3 · ENCUENTRO',title:'Algo bloquea el camino',
+        text:'La party debe resolver el momento más peligroso de la expedición.',
+        effects:[]
+      },
+      {
+        icon:'🔥',label:'ETAPA 4 · CAMPAMENTO',title:'Tiempo para contar las heridas',
+        text:'Después del peligro, el grupo descansa y evalúa lo aprendido.',
+        effects:[]
+      },
+      {
+        icon:'🏰',label:'ETAPA 5 · REGRESO',title:'De vuelta al Grifo de Plata',
+        text:'El gremio espera noticias de la expedición.',
+        effects:[]
+      }
+    ];
 
-    personalityEvent(party,lines);
-    if(party.length>=3 && oneIn(2)) personalityEvent(party,lines);
-    combatEvent(party,success,lines);
+    if(syn.notes.length){
+      syn.notes.forEach(note=>addStageEffect(stages[0],note,'good'));
+    }
+
+    lines.push(\`<p><b>\${mission.name}</b></p>\`);
+    lines.push(\`<p class="muted">\${party.map(x=>x.name).join(', ')} parten durante \${mission.days} días.</p>\`);
+    lines.push(\`<p>Probabilidad estimada de éxito: <b>\${Math.round(chance*100)}%</b>\${syn.notes.length?' · Ventajas: '+syn.notes.join(', '):''}</p>\`);
+
+    personalityEvent(party,lines,stages[1]);
+    if(party.length>=3 && oneIn(2)) personalityEvent(party,lines,stages[1]);
+
+    combatEvent(party,success,lines,stages[2]);
+    if(success){
+      stages[2].title='La party supera el encuentro';
+      addStageEffect(stages[2],'Objetivo asegurado','good');
+    }else{
+      stages[2].title='La situación obliga a retirarse';
+      addStageEffect(stages[2],'Retirada organizada','bad');
+    }
 
     let gain;
     if(success){
       gain=Math.round(mission.reward*(0.85+Math.random()*0.35));
       state.gold+=gain;
       state.rep+=4+mission.difficulty*2;
-      lines.push(`<p class="good"><b>✓ La misión tiene éxito · +${gain} oro</b></p>`);
+      lines.push(\`<p class="good"><b>✓ La misión tiene éxito · +\${gain} oro</b></p>\`);
     }else{
       gain=Math.round(mission.reward*(0.10+Math.random()*0.15));
       state.gold+=gain;
       state.rep=Math.max(0,state.rep-1);
-      lines.push(`<p class="bad"><b>✕ La party abandona la misión · recupera ${gain} oro</b></p>`);
+      lines.push(\`<p class="bad"><b>✕ La party abandona la misión · recupera \${gain} oro</b></p>\`);
     }
 
     party.forEach(h=>{
+      const beforeLevel=h.level;
+      const beforeInjury=h.injury;
       h.expeditions++;
       const xp=success?38+mission.difficulty*23:18+mission.difficulty*10;
       h.xp+=xp;
-      let leveled=false;
       while(h.xp>=threshold(h.level)){
         h.xp-=threshold(h.level);
         h.level++;
-        leveled=true;
       }
+
       const injuryChance=(success?0.08:0.24)+mission.difficulty*0.025+traitScore(h,'risk')*0.012;
       if(Math.random()<injuryChance) h.injury=clamp(h.injury+1,0,3);
       else if(h.injury>0 && success && Math.random()<0.35) h.injury--;
 
-      lines.push(`<p>${DATA.classes[h.cls].icon} <b>${h.name}</b> +${xp} XP${leveled?` · <b>SUBE A NV.${h.level}</b>`:''}${h.injury?' · Herida '+h.injury:''}</p>`);
+      const leveled=h.level>beforeLevel;
+      const injuryDelta=h.injury-beforeInjury;
+
+      lines.push(\`<p>\${DATA.classes[h.cls].icon} <b>\${h.name}</b> +\${xp} XP\${leveled?\` · <b>SUBE A NV.\${h.level}</b>\`:''}\${h.injury?' · Herida '+h.injury:''}</p>\`);
+
+      addStageEffect(stages[3],\`\${h.name} · +\${xp} XP\`,leveled?'good':'');
+      if(leveled) addStageEffect(stages[3],\`\${h.name} alcanza Nv.\${h.level}\`,'good');
+      if(injuryDelta>0) addStageEffect(stages[3],\`\${h.name} · Herida \${h.injury}\`,'bad');
+      if(injuryDelta<0) addStageEffect(stages[3],\`\${h.name} se recupera parcialmente\`,'good');
+
+      heroResults.push({
+        title:\`\${DATA.classes[h.cls].icon} \${h.name}\`,
+        text:\`+\${xp} XP · Nv.\${h.level}\${h.injury?' · Herida '+h.injury:' · Sano'}\`,
+        kind:h.injury?'':'good'
+      });
     });
 
     for(let i=0;i<party.length;i++){
       for(let j=i+1;j<party.length;j++){
         const social=(traitScore(party[i],'social')+traitScore(party[j],'social'))/2;
-        changeRelation(party[i].id,party[j].id,Math.max(0,2+Math.round(social)),success?0:1,oneIn(14)?2:0);
+        const passiveBond=Math.max(0,2+Math.round(social));
+        changeRelation(party[i].id,party[j].id,passiveBond,success?0:1,oneIn(14)?2:0);
       }
     }
 
+    let lost=null;
     if(!success && mission.difficulty>=3){
       const danger=party.filter(x=>x.injury>=3);
       if(danger.length && Math.random()<0.08+mission.difficulty*0.01){
-        const lost=rand(danger);
+        lost=rand(danger);
         lost.alive=false;
         state.selected=state.selected.filter(id=>id!==lost.id);
-        lines.push(`<p class="bad"><b>☠ ${lost.name} no regresó de la expedición.</b></p>`);
-        state.chronicle.unshift(`Día ${state.day} · ${lost.name} murió durante ${mission.name}.`);
+        lines.push(\`<p class="bad"><b>☠ \${lost.name} no regresó de la expedición.</b></p>\`);
+        state.chronicle.unshift(\`Día \${state.day} · \${lost.name} murió durante \${mission.name}.\`);
+        addStageEffect(stages[4],\`\${lost.name} no regresó\`,'bad');
       }
     }
 
@@ -319,7 +480,7 @@
       state.year++;
     }
     state.missionsDone++;
-    state.chronicle.unshift(`Día ${state.day} · ${party.map(x=>x.name).join(', ')} ${success?'completaron':'regresaron de'} ${mission.name}.`);
+    state.chronicle.unshift(\`Día \${state.day} · \${party.map(x=>x.name).join(', ')} \${success?'completaron':'regresaron de'} \${mission.name}.\`);
 
     Object.entries(state.relations).forEach(([k,r])=>{
       const [a,b]=k.split('-').map(Number);
@@ -327,17 +488,53 @@
       if(!A||!B||A.alive===false||B.alive===false) return;
       if(r.status==='Atracción mutua' && r.attraction>=65 && oneIn(3)){
         r.status='Romance naciente';
-        lines.push(`<p class="event"><b>Desarrollo personal:</b> ${A.name} y ${B.name} parecen haber empezado a verse como algo más que compañeros.</p>`);
-        state.chronicle.unshift(`Día ${state.day} · Entre ${A.name} y ${B.name} comienza un romance.`);
+        lines.push(\`<p class="event"><b>Desarrollo personal:</b> \${A.name} y \${B.name} parecen haber empezado a verse como algo más que compañeros.</p>\`);
+        state.chronicle.unshift(\`Día \${state.day} · Entre \${A.name} y \${B.name} comienza un romance.\`);
+        addStageEffect(stages[4],\`\${A.name} y \${B.name}: romance naciente\`,'bond');
       }
     });
 
+    stages[4].text=success
+      ? \`La party vuelve con noticias de victoria y \${gain} monedas de oro para el gremio.\`
+      : \`La party vuelve antes de lo previsto. Recuperaron \${gain} monedas de oro y tendrán tiempo para recuperarse.\`;
+    addStageEffect(stages[4],\`+\${gain} oro\`,'good');
+    addStageEffect(stages[4],\`Reputación: \${state.rep}\`,success?'good':'');
+
+    const summary=[
+      {
+        title:success?'✓ Victoria':'↩ Retirada',
+        text:\`\${mission.name} · \${mission.days} días\`,
+        kind:success?'good':'bad'
+      },
+      {
+        title:'Tesorería',
+        text:\`+\${gain} oro · Total \${state.gold}\`,
+        kind:'good'
+      },
+      ...heroResults
+    ];
+    if(lost){
+      summary.push({title:\`☠ \${lost.name}\`,text:'No regresó de la expedición.',kind:'bad'});
+    }
+
     $('report').innerHTML=lines.join('');
     $('resultTag').textContent=success?'Victoria':'Retirada';
+
+    expeditionView={
+      mission,
+      party:party.filter(x=>x.alive!==false),
+      stages,
+      summary,
+      success,
+      index:0
+    };
+
     saveState(false);
     renderAll();
     navigate('mission');
-    notice(success?'La expedición terminó con éxito.':'La party regresó con dificultades.');
+    setExpeditionControls(true);
+    renderExpeditionStage();
+    notice('La expedición ha comenzado. Avanza etapa por etapa.');
   }
 
   function renderHeader(){
