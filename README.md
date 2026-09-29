@@ -3,7 +3,7 @@
 Prototype web game focused on guild management, autonomous expeditions, character growth, relationships and generational progression.
 
 ## Current version
-V0.4 — Expedition Experience.
+V0.5 — Expedition Variety.
 
 ## Core loop
 Recruit adventurers -> form a party -> choose a mission -> watch the expedition unfold -> review consequences -> improve the guild.
@@ -15,7 +15,11 @@ Recruit adventurers -> form a party -> choose a mission -> watch the expedition 
 - Party formation
 - Autonomous expeditions
 - Five-stage expedition presentation: Travel, Exploration, Encounter, Camp and Return
-- Visual event feedback tied to real simulation outcomes
+- Expanded event library for travel, exploration and camp moments
+- Mission-specific encounter variety
+- Class-specific expedition moments
+- Trait-driven moments that can affect relationships or discoveries
+- Visual feedback tied to real simulation outcomes
 - XP and leveling
 - Injuries and death risk
 - Bonds, tension and attraction
