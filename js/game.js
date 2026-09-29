@@ -1211,7 +1211,8 @@
       btn.innerHTML=`
         <span class="class-icon">${DATA.classes[h.cls].icon}</span>
         <span><span class="hero-name">${h.name} · Nv.${h.level}</span><br>
-        <span class="tiny">${spec?.name||h.cls} · ${h.age} años · Gen.${h.generation||1}${h.injury?' · '+h.injury.name+' '+h.injury.daysLeft+'d':''}</span></span>
+        <span class="tiny">${spec?.name||h.cls} · ${h.age} años · Gen.${h.generation||1}${h.injury?' · '+h.injury.name+' '+h.injury.daysLeft+'d':''}</span>
+        ${heroTitles(h).length?`<br><span class="tiny heir-badge">✦ ${heroTitles(h)[0]}</span>`:''}</span>
         <span class="chevron">›</span>`;
       btn.addEventListener('click',()=>{
         currentDetailId=h.id;
