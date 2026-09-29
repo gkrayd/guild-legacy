@@ -22,3 +22,6 @@ Recruit adventurers -> form a party -> choose a mission -> autonomous expedition
 
 ## Run locally
 Open `index.html` in a modern browser.
+
+## Web build
+GitHub Pages deployment is configured through GitHub Actions.
