@@ -2,91 +2,227 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Guild Legacy — Prototype V0.2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#171510" />
+  <title>Guild Legacy — V0.3 Mobile Landscape</title>
   <link rel="stylesheet" href="css/game.css" />
 </head>
 <body>
-  <main class="shell">
-    <header class="topbar">
-      <div>
-        <div class="eyebrow">PROTOTIPO DE GAMEPLAY</div>
-        <h1>Guild Legacy</h1>
-        <p>El Grifo de Plata · V0.2</p>
+  <div class="orientation-warning" aria-hidden="true">
+    <div class="orientation-card">
+      <div class="rotate-icon">↻</div>
+      <strong>Gira el teléfono</strong>
+      <span>Guild Legacy está diseñado para jugarse en horizontal.</span>
+    </div>
+  </div>
+
+  <main class="game-shell">
+    <header class="hud">
+      <div class="brand">
+        <span class="eyebrow">GUILD LEGACY</span>
+        <strong>El Grifo de Plata</strong>
+        <span class="build">V0.3</span>
       </div>
-      <div class="top-actions">
-        <button id="saveBtn" class="secondary">Guardar</button>
-        <button id="resetBtn" class="danger">Reiniciar partida</button>
+
+      <div class="hud-stats">
+        <div class="hud-stat"><span>Oro</span><strong id="goldStat">1000</strong></div>
+        <div class="hud-stat"><span>Día</span><strong id="dayStat">1</strong></div>
+        <div class="hud-stat"><span>Año</span><strong id="yearStat">1</strong></div>
+        <div class="hud-stat"><span>Rep</span><strong id="repStat">0</strong></div>
+      </div>
+
+      <div class="hud-actions">
+        <button id="saveBtn" class="icon-btn" type="button" title="Guardar">Guardar</button>
+        <button id="resetBtn" class="icon-btn danger" type="button" title="Reiniciar">Reiniciar</button>
       </div>
     </header>
 
-    <section class="stats-grid">
-      <article class="stat"><span>Tesorería</span><strong id="goldStat">1000 oro</strong></article>
-      <article class="stat"><span>Calendario</span><strong id="dayStat">Día 1 · Año 1</strong></article>
-      <article class="stat"><span>Reputación</span><strong id="repStat">0</strong></article>
-      <article class="stat"><span>Expediciones</span><strong id="missionsStat">0</strong></article>
-    </section>
+    <nav class="main-nav" aria-label="Navegación principal">
+      <button type="button" class="nav-btn active" data-screen="guild">Gremio</button>
+      <button type="button" class="nav-btn" data-screen="adventurers">Aventureros</button>
+      <button type="button" class="nav-btn" data-screen="party">Party <span id="partyNavCount" class="nav-count">0/4</span></button>
+      <button type="button" class="nav-btn" data-screen="mission">Misión</button>
+      <button type="button" class="nav-btn" data-screen="chronicle">Crónica</button>
+    </nav>
 
-    <section class="two-col">
-      <article class="panel">
+    <div id="notice" class="notice" aria-live="polite"></div>
+
+    <section id="screen-guild" class="game-screen active" data-screen-panel="guild">
+      <aside class="panel guild-summary">
+        <div>
+          <span class="section-kicker">BASE DE OPERACIONES</span>
+          <h1>Gremio</h1>
+          <p>Recluta aventureros y prepara la siguiente expedición.</p>
+        </div>
+
+        <div class="summary-grid">
+          <div class="mini-stat"><span>Miembros</span><strong id="guildMembers">0</strong></div>
+          <div class="mini-stat"><span>Disponibles</span><strong id="guildAvailable">0</strong></div>
+          <div class="mini-stat"><span>Heridos</span><strong id="guildInjured">0</strong></div>
+          <div class="mini-stat"><span>Expediciones</span><strong id="missionsStat">0</strong></div>
+        </div>
+
+        <div class="quick-actions">
+          <button type="button" class="secondary" data-go="adventurers">Ver aventureros</button>
+          <button type="button" class="primary" data-go="party">Formar Party</button>
+        </div>
+
+        <div class="latest-event">
+          <span>Último acontecimiento</span>
+          <strong id="latestEvent">Se funda el gremio.</strong>
+        </div>
+      </aside>
+
+      <article class="panel guild-recruit">
         <div class="panel-title-row">
           <div>
+            <span class="section-kicker">TABLÓN DE RECLUTAMIENTO</span>
             <h2>Aspirantes</h2>
-            <p>Cada aventurero tiene clase, edad y dos rasgos.</p>
           </div>
-          <button id="refreshApplicantsBtn" class="secondary">Nuevos aspirantes · 20 oro</button>
+          <button id="refreshApplicantsBtn" class="secondary compact" type="button">Nuevos · 20 oro</button>
         </div>
-        <div id="applicants" class="cards"></div>
-      </article>
-
-      <article class="panel">
-        <h2>Miembros del gremio</h2>
-        <p>Selecciona entre 2 y 4 miembros para la próxima expedición.</p>
-        <div id="roster" class="stack"></div>
-        <div id="partyInfo" class="party-info">Party actual: 0 / 4</div>
+        <div id="applicants" class="applicant-grid"></div>
       </article>
     </section>
 
-    <section class="two-col mission-layout">
-      <article class="panel">
-        <h2>Tablón de misiones</h2>
-        <p>Elige el destino. Los aventureros resolverán la expedición por sí mismos.</p>
+    <section id="screen-adventurers" class="game-screen" data-screen-panel="adventurers">
+      <article class="panel roster-browser">
+        <div class="panel-title-row">
+          <div>
+            <span class="section-kicker">ROSTER</span>
+            <h2>Aventureros</h2>
+          </div>
+          <span id="rosterCount" class="tag">0 miembros</span>
+        </div>
+        <div id="adventurerList" class="adventurer-list"></div>
+      </article>
+
+      <aside class="panel roster-overview">
+        <span class="section-kicker">ESTADO DEL GREMIO</span>
+        <h2>Resumen</h2>
+        <div class="summary-grid">
+          <div class="mini-stat"><span>Total</span><strong id="overviewTotal">0</strong></div>
+          <div class="mini-stat"><span>Sanos</span><strong id="overviewHealthy">0</strong></div>
+          <div class="mini-stat"><span>Heridos</span><strong id="overviewInjured">0</strong></div>
+          <div class="mini-stat"><span>En Party</span><strong id="overviewParty">0</strong></div>
+        </div>
+        <p class="hint">Toca un aventurero para abrir su ficha, relaciones e historial personal.</p>
+        <button type="button" class="primary full" data-go="party">Ir a Party</button>
+      </aside>
+    </section>
+
+    <section id="screen-detail" class="game-screen" data-screen-panel="detail">
+      <aside class="panel hero-profile">
+        <button type="button" class="back-btn" data-go="adventurers">← Aventureros</button>
+        <div id="detailPortrait" class="portrait-placeholder">⚔️</div>
+        <h2 id="detailName">Aventurero</h2>
+        <p id="detailMeta">Clase · Nivel · Edad</p>
+        <button id="detailAddPartyBtn" type="button" class="primary full">Añadir a Party</button>
+      </aside>
+
+      <article class="detail-grid">
+        <div class="panel detail-card">
+          <span class="section-kicker">PERSONALIDAD</span>
+          <h3>Rasgos</h3>
+          <div id="detailTraits" class="detail-content"></div>
+        </div>
+        <div class="panel detail-card">
+          <span class="section-kicker">PROGRESO</span>
+          <h3>Estado</h3>
+          <div id="detailState" class="detail-content"></div>
+        </div>
+        <div class="panel detail-card">
+          <span class="section-kicker">VÍNCULOS</span>
+          <h3>Relaciones</h3>
+          <div id="detailRelations" class="detail-content"></div>
+        </div>
+        <div class="panel detail-card">
+          <span class="section-kicker">MEMORIA</span>
+          <h3>Historial</h3>
+          <div id="detailHistory" class="detail-content"></div>
+        </div>
+      </article>
+    </section>
+
+    <section id="screen-party" class="game-screen" data-screen-panel="party">
+      <article class="panel party-selector">
+        <div class="panel-title-row">
+          <div>
+            <span class="section-kicker">FORMACIÓN</span>
+            <h2>Selecciona aventureros</h2>
+          </div>
+          <span class="tag">Máximo 4</span>
+        </div>
+        <div id="roster" class="party-roster"></div>
+      </article>
+
+      <aside class="panel party-summary">
+        <span class="section-kicker">PARTY ACTUAL</span>
+        <h2 id="partyInfo">0 / 4</h2>
+        <div id="partySlots" class="party-slots"></div>
+        <div id="partySynergy" class="synergy-box"></div>
+        <div class="quick-actions vertical">
+          <button id="clearPartyBtn" type="button" class="secondary">Limpiar Party</button>
+          <button type="button" class="primary" data-go="mission">Ir a Misión →</button>
+        </div>
+      </aside>
+    </section>
+
+    <section id="screen-mission" class="game-screen mission-screen" data-screen-panel="mission">
+      <aside class="panel mission-controls">
+        <div>
+          <span class="section-kicker">EXPEDICIÓN</span>
+          <h2>Misión</h2>
+        </div>
         <label for="missionSelect">Destino</label>
         <select id="missionSelect"></select>
         <div id="missionDetails" class="mission-details"></div>
-        <button id="dispatchBtn" class="primary full">Enviar expedición</button>
-        <div id="notice" class="notice" aria-live="polite"></div>
-      </article>
+        <div class="mission-party">
+          <span>Party enviada</span>
+          <strong id="missionParty">Sin formar</strong>
+        </div>
+        <button id="dispatchBtn" class="primary full dispatch" type="button">ENVIAR EXPEDICIÓN</button>
+      </aside>
 
       <article class="panel report-panel">
         <div class="panel-title-row">
-          <h2>Crónica de la expedición</h2>
+          <div>
+            <span class="section-kicker">RESULTADO</span>
+            <h2>Informe de expedición</h2>
+          </div>
           <span id="resultTag" class="tag">Sin expediciones</span>
         </div>
         <div id="report" class="report">
-          <p>La personalidad todavía no ha sido puesta a prueba.</p>
-          <p class="muted">Recluta una party y envíala a una misión para generar la primera historia.</p>
+          <p class="muted">La historia de la expedición aparecerá aquí.</p>
+          <p class="muted">Personalidad, combate, heridas, XP y vínculos se resolverán automáticamente.</p>
+        </div>
+        <div class="report-actions">
+          <button type="button" class="secondary" data-go="party">Revisar Party</button>
+          <button type="button" class="secondary" data-go="chronicle">Ver Crónica</button>
+          <button type="button" class="secondary" data-go="guild">Volver al Gremio</button>
         </div>
       </article>
     </section>
 
-    <section class="two-col">
-      <article class="panel">
+    <section id="screen-chronicle" class="game-screen" data-screen-panel="chronicle">
+      <article class="panel chronicle-panel">
+        <div class="panel-title-row">
+          <div>
+            <span class="section-kicker">MEMORIA DEL GREMIO</span>
+            <h2>Crónica</h2>
+          </div>
+          <span id="chronicleCount" class="tag">0 eventos</span>
+        </div>
+        <div id="chronicle" class="chronicle-list"></div>
+      </article>
+
+      <aside class="panel relations-panel">
+        <span class="section-kicker">VÍNCULOS</span>
         <h2>Relaciones</h2>
-        <p>Bond, tensión y atracción pueden evolucionar por separado.</p>
-        <div id="relations" class="stack"></div>
-      </article>
-
-      <article class="panel">
-        <h2>Historia del gremio</h2>
-        <p>Los acontecimientos importantes quedan registrados.</p>
-        <div id="chronicle" class="stack chronicle"></div>
-      </article>
+        <p>Bond, tensión y atracción cambian con lo vivido en expediciones.</p>
+        <div id="relations" class="relations-list"></div>
+      </aside>
     </section>
-
-    <footer>
-      Build V0.2 standalone · Gameplay first · Placeholder visuals
-    </footer>
   </main>
 
   <script src="js/data.js"></script>
