@@ -1,5 +1,5 @@
 window.GUILD_DATA = {
-  version:'1.0',
+  version:'1.1',
   classes:{
     Guerrero:{icon:'⚔️',role:'Defensor',power:16,ability:'Interceptar'},
     Maga:{icon:'✨',role:'Daño mágico',power:17,ability:'Explosión Arcana'},
@@ -10,28 +10,28 @@ window.GUILD_DATA = {
   },
   specializations:{
     Guerrero:[
-      {id:'guardian',name:'Guardián',power:4,ability:'Muro de Acero',desc:'Protege mejor a aliados y reduce riesgos.'},
-      {id:'duelist',name:'Duelista',power:6,ability:'Contraataque',desc:'Más poder ofensivo, menos enfoque defensivo.'}
+      {id:'guardian',name:'Guardián',power:4,ability:'Muro de Acero',effect:{partyInjury:-0.05},desc:'Protege mejor a aliados y reduce riesgos.'},
+      {id:'duelist',name:'Duelista',power:6,ability:'Contraataque',effect:{success:0.025},desc:'Aporta precisión ofensiva en encuentros decisivos.'}
     ],
     Maga:[
-      {id:'elementalist',name:'Elementalista',power:6,ability:'Tormenta Elemental',desc:'Especialista en daño y control del campo.'},
-      {id:'arcanist',name:'Arcanista',power:4,ability:'Sello Arcano',desc:'Mejora exploración y resolución de magia antigua.'}
+      {id:'elementalist',name:'Elementalista',power:6,ability:'Tormenta Elemental',effect:{success:0.03},desc:'Especialista en daño y control del campo.'},
+      {id:'arcanist',name:'Arcanista',power:4,ability:'Sello Arcano',effect:{arcaneSuccess:0.06,treasure:0.04},desc:'Mejora exploración y resolución de magia antigua.'}
     ],
     Sacerdotisa:[
-      {id:'healer',name:'Sanadora Mayor',power:3,ability:'Restauración',desc:'Reduce heridas y favorece recuperación.'},
-      {id:'oracle',name:'Oráculo',power:4,ability:'Augurio',desc:'Mejora preparación y lectura de peligros.'}
+      {id:'healer',name:'Sanadora Mayor',power:3,ability:'Restauración',effect:{partyInjury:-0.07},desc:'Reduce heridas y favorece recuperación.'},
+      {id:'oracle',name:'Oráculo',power:4,ability:'Augurio',effect:{success:0.04},desc:'Mejora preparación y lectura de peligros.'}
     ],
     Picaro:[
-      {id:'scout',name:'Explorador',power:4,ability:'Paso Silencioso',desc:'Excelente para rutas, trampas y tesoros.'},
-      {id:'shadow',name:'Sombra',power:6,ability:'Golpe Oportuno',desc:'Mayor eficacia en encuentros peligrosos.'}
+      {id:'scout',name:'Explorador',power:4,ability:'Paso Silencioso',effect:{treasure:0.08,explorationSuccess:0.04},desc:'Excelente para rutas, trampas y tesoros.'},
+      {id:'shadow',name:'Sombra',power:6,ability:'Golpe Oportuno',effect:{success:0.025},desc:'Mayor eficacia en encuentros peligrosos.'}
     ],
     Arquera:[
-      {id:'ranger',name:'Guardabosques',power:5,ability:'Rastreo Maestro',desc:'Mejora viajes y exploración.'},
-      {id:'marksman',name:'Tiradora',power:6,ability:'Disparo Certero',desc:'Especialista en resolver encuentros.'}
+      {id:'ranger',name:'Guardabosques',power:5,ability:'Rastreo Maestro',effect:{explorationSuccess:0.05,treasure:0.04},desc:'Mejora viajes y exploración.'},
+      {id:'marksman',name:'Tiradora',power:6,ability:'Disparo Certero',effect:{success:0.03},desc:'Especialista en resolver encuentros.'}
     ],
     Paladin:[
-      {id:'warden',name:'Custodia',power:4,ability:'Voto Protector',desc:'Reduce riesgo para toda la party.'},
-      {id:'champion',name:'Campeón',power:6,ability:'Golpe Radiante',desc:'Mayor poder en misiones difíciles.'}
+      {id:'warden',name:'Custodia',power:4,ability:'Voto Protector',effect:{partyInjury:-0.06},desc:'Reduce riesgo para toda la party.'},
+      {id:'champion',name:'Campeón',power:6,ability:'Golpe Radiante',effect:{hardSuccess:0.05},desc:'Mayor poder en misiones difíciles.'}
     ]
   },
   traits:{
