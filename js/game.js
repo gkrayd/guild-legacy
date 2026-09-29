@@ -128,6 +128,12 @@
     state.facilities={...freshState().facilities,...(state.facilities||{})};
     state.planning={...freshState().planning,...(state.planning||{})};
     state.relations=state.relations||{};
+    Object.values(state.relations).forEach(r=>{
+      if(r.status==='Romance naciente'||r.status==='Pareja') r.romance=true;
+      if(r.status==='Matrimonio') r.married=true;
+      r.romance=!!r.romance;
+      r.married=!!r.married;
+    });
     state.children=Array.isArray(state.children)?state.children:[];
     state.chronicle=Array.isArray(state.chronicle)?state.chronicle:[];
     state.regionNotices=Array.isArray(state.regionNotices)?state.regionNotices:['frontier'];
@@ -594,7 +600,7 @@
   function unlockedMissions(){
     return DATA.missions.filter(m=>{
       const region=DATA.regions.find(r=>r.id===m.region);
-      return !region || state.rep>=region.rep;
+      return !region || state.regionNotices.includes(region.id);
     });
   }
 
@@ -945,7 +951,9 @@
       for(let j=i+1;j<party.length;j++){
         const social=(traitScore(party[i],'social')+traitScore(party[j],'social'))/2;
         const bond=Math.max(0,2+Math.round(social))+tavern;
-        changeRelation(party[i].id,party[j].id,bond,success?0:1,oneIn(12)?2:0);
+        const current=relation(party[i].id,party[j].id);
+        const attraction=current.bond>=18 && Math.random()<(0.32+tavern*0.05) ? 3+tavern : (oneIn(14)?1:0);
+        changeRelation(party[i].id,party[j].id,bond,success?0:1,attraction);
       }
     }
 
