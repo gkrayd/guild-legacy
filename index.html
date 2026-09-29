@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#171510" />
-  <title>Guild Legacy — V0.5 Expedition Variety</title>
+  <title>Guild Legacy — V1.0 Core Complete</title>
   <link rel="stylesheet" href="css/game.css" />
 </head>
 <body>
@@ -21,7 +21,7 @@
       <div class="brand">
         <span class="eyebrow">GUILD LEGACY</span>
         <strong>El Grifo de Plata</strong>
-        <span class="build">V0.5</span>
+        <span class="build">V1.0</span>
       </div>
 
       <div class="hud-stats">
@@ -32,17 +32,18 @@
       </div>
 
       <div class="hud-actions">
-        <button id="saveBtn" class="icon-btn" type="button" title="Guardar">Guardar</button>
-        <button id="resetBtn" class="icon-btn danger" type="button" title="Reiniciar">Reiniciar</button>
+        <button id="saveBtn" class="icon-btn" type="button">Guardar</button>
+        <button id="resetBtn" class="icon-btn danger" type="button">Reiniciar</button>
       </div>
     </header>
 
-    <nav class="main-nav" aria-label="Navegación principal">
+    <nav class="main-nav six" aria-label="Navegación principal">
       <button type="button" class="nav-btn active" data-screen="guild">Gremio</button>
       <button type="button" class="nav-btn" data-screen="adventurers">Aventureros</button>
       <button type="button" class="nav-btn" data-screen="party">Party <span id="partyNavCount" class="nav-count">0/4</span></button>
       <button type="button" class="nav-btn" data-screen="mission">Misión</button>
       <button type="button" class="nav-btn" data-screen="chronicle">Crónica</button>
+      <button type="button" class="nav-btn" data-screen="legacy">Legado</button>
     </nav>
 
     <div id="notice" class="notice" aria-live="polite"></div>
@@ -52,18 +53,18 @@
         <div>
           <span class="section-kicker">BASE DE OPERACIONES</span>
           <h1>Gremio</h1>
-          <p>Recluta aventureros y prepara la siguiente expedición.</p>
+          <p>Un hogar para aventureros, veteranos y futuras generaciones.</p>
         </div>
 
         <div class="summary-grid">
-          <div class="mini-stat"><span>Miembros</span><strong id="guildMembers">0</strong></div>
+          <div class="mini-stat"><span>Activos</span><strong id="guildMembers">0</strong></div>
           <div class="mini-stat"><span>Disponibles</span><strong id="guildAvailable">0</strong></div>
           <div class="mini-stat"><span>Heridos</span><strong id="guildInjured">0</strong></div>
           <div class="mini-stat"><span>Expediciones</span><strong id="missionsStat">0</strong></div>
         </div>
 
         <div class="quick-actions">
-          <button type="button" class="secondary" data-go="adventurers">Ver aventureros</button>
+          <button id="advanceWeekBtn" type="button" class="secondary">Pasar 7 días</button>
           <button type="button" class="primary" data-go="party">Formar Party</button>
         </div>
 
@@ -73,15 +74,35 @@
         </div>
       </aside>
 
-      <article class="panel guild-recruit">
-        <div class="panel-title-row">
-          <div>
-            <span class="section-kicker">TABLÓN DE RECLUTAMIENTO</span>
-            <h2>Aspirantes</h2>
+      <article class="guild-right-stack">
+        <div class="panel guild-recruit">
+          <div class="panel-title-row">
+            <div>
+              <span class="section-kicker">TABLÓN DE RECLUTAMIENTO</span>
+              <h2>Aspirantes</h2>
+            </div>
+            <button id="refreshApplicantsBtn" class="secondary compact" type="button">Nuevos · 20 oro</button>
           </div>
-          <button id="refreshApplicantsBtn" class="secondary compact" type="button">Nuevos · 20 oro</button>
+          <div id="applicants" class="applicant-grid"></div>
         </div>
-        <div id="applicants" class="applicant-grid"></div>
+
+        <div class="guild-lower-grid">
+          <div class="panel">
+            <div class="panel-title-row">
+              <div>
+                <span class="section-kicker">MEJORAS</span>
+                <h2>Instalaciones</h2>
+              </div>
+            </div>
+            <div id="facilities" class="facility-grid"></div>
+          </div>
+
+          <div class="panel guild-life-panel">
+            <span class="section-kicker">VIDA COTIDIANA</span>
+            <h2>Vida del gremio</h2>
+            <div id="guildLifeEvent" class="life-event-card">Con el paso del tiempo ocurrirán pequeñas historias entre expediciones.</div>
+          </div>
+        </div>
       </article>
     </section>
 
@@ -106,7 +127,7 @@
           <div class="mini-stat"><span>Heridos</span><strong id="overviewInjured">0</strong></div>
           <div class="mini-stat"><span>En Party</span><strong id="overviewParty">0</strong></div>
         </div>
-        <p class="hint">Toca un aventurero para abrir su ficha, relaciones e historial personal.</p>
+        <p class="hint">Toca un aventurero para consultar su origen, motivación, heridas, especialización, relaciones y familia.</p>
         <button type="button" class="primary full" data-go="party">Ir a Party</button>
       </aside>
     </section>
@@ -117,29 +138,40 @@
         <div id="detailPortrait" class="portrait-placeholder">⚔️</div>
         <h2 id="detailName">Aventurero</h2>
         <p id="detailMeta">Clase · Nivel · Edad</p>
+        <div id="detailStatusBadge" class="status-badge">Activo</div>
         <button id="detailAddPartyBtn" type="button" class="primary full">Añadir a Party</button>
+        <button id="retireBtn" type="button" class="secondary full is-hidden">Retirarse del gremio activo</button>
       </aside>
 
       <article class="detail-grid">
         <div class="panel detail-card">
-          <span class="section-kicker">PERSONALIDAD</span>
-          <h3>Rasgos</h3>
-          <div id="detailTraits" class="detail-content"></div>
+          <span class="section-kicker">IDENTIDAD</span>
+          <h3>Quién es</h3>
+          <div id="detailIdentity" class="detail-content"></div>
         </div>
+
         <div class="panel detail-card">
           <span class="section-kicker">PROGRESO</span>
           <h3>Estado</h3>
           <div id="detailState" class="detail-content"></div>
         </div>
+
+        <div class="panel detail-card">
+          <span class="section-kicker">CRECIMIENTO</span>
+          <h3>Especialización</h3>
+          <div id="detailSpecialization" class="detail-content"></div>
+        </div>
+
         <div class="panel detail-card">
           <span class="section-kicker">VÍNCULOS</span>
-          <h3>Relaciones</h3>
+          <h3>Relaciones y familia</h3>
           <div id="detailRelations" class="detail-content"></div>
         </div>
-        <div class="panel detail-card">
-          <span class="section-kicker">MEMORIA</span>
-          <h3>Historial</h3>
-          <div id="detailHistory" class="detail-content"></div>
+
+        <div class="panel detail-card wide">
+          <span class="section-kicker">MEMORIA PERSONAL</span>
+          <h3>Historia</h3>
+          <div id="detailHistory" class="detail-content history-scroll"></div>
         </div>
       </article>
     </section>
@@ -161,6 +193,7 @@
         <h2 id="partyInfo">0 / 4</h2>
         <div id="partySlots" class="party-slots"></div>
         <div id="partySynergy" class="synergy-box"></div>
+        <div id="partyChemistry" class="chemistry-box"></div>
         <div class="quick-actions vertical">
           <button id="clearPartyBtn" type="button" class="secondary">Limpiar Party</button>
           <button type="button" class="primary" data-go="mission">Ir a Misión →</button>
@@ -171,37 +204,55 @@
     <section id="screen-mission" class="game-screen mission-screen" data-screen-panel="mission">
       <aside class="panel mission-controls">
         <div>
-          <span class="section-kicker">EXPEDICIÓN</span>
+          <span class="section-kicker">PLANIFICACIÓN</span>
           <h2>Misión</h2>
         </div>
-        <label for="missionSelect">Destino</label>
+
+        <label for="missionSelect">Contrato disponible</label>
         <select id="missionSelect"></select>
         <div id="missionDetails" class="mission-details"></div>
+
+        <div class="planning-grid">
+          <label>Ritmo
+            <select id="paceSelect"></select>
+          </label>
+          <label>Prioridad
+            <select id="prioritySelect"></select>
+          </label>
+          <label>Suministros
+            <select id="supplySelect"></select>
+          </label>
+        </div>
+
+        <div id="planSummary" class="plan-summary"></div>
+
         <div class="mission-party">
           <span>Party enviada</span>
           <strong id="missionParty">Sin formar</strong>
         </div>
+
         <button id="dispatchBtn" class="primary full dispatch" type="button">ENVIAR EXPEDICIÓN</button>
       </aside>
 
       <article class="panel report-panel">
         <div class="panel-title-row">
           <div>
-            <span class="section-kicker">RESULTADO</span>
-            <h2>Informe de expedición</h2>
+            <span class="section-kicker">EXPEDICIÓN</span>
+            <h2>Informe</h2>
           </div>
           <span id="resultTag" class="tag">Sin expediciones</span>
         </div>
+
         <div id="expeditionTheater" class="expedition-theater">
           <div class="expedition-head">
             <div>
-              <span class="section-kicker">SECUENCIA DE EXPEDICIÓN</span>
-              <strong id="expeditionTitle">Prepara una party y elige un destino</strong>
+              <span class="section-kicker">SECUENCIA</span>
+              <strong id="expeditionTitle">Prepara una party y elige un contrato</strong>
             </div>
             <div id="expeditionPartyVisual" class="expedition-party-visual"></div>
           </div>
 
-          <div id="expeditionSteps" class="expedition-steps">
+          <div class="expedition-steps">
             <div class="exp-step" data-stage="0"><span>1</span>Viaje</div>
             <div class="exp-step" data-stage="1"><span>2</span>Exploración</div>
             <div class="exp-step" data-stage="2"><span>3</span>Encuentro</div>
@@ -209,12 +260,12 @@
             <div class="exp-step" data-stage="4"><span>5</span>Regreso</div>
           </div>
 
-          <div id="expeditionScene" class="expedition-scene">
+          <div class="expedition-scene">
             <div id="expeditionStageIcon" class="stage-icon">🗺️</div>
             <div class="stage-copy">
               <span id="expeditionStageLabel" class="section-kicker">LISTO</span>
               <h3 id="expeditionStageTitle">La próxima historia empieza aquí</h3>
-              <p id="expeditionStageText">Pulsa “Enviar expedición” para ver el viaje desarrollarse paso a paso.</p>
+              <p id="expeditionStageText">La expedición se resolverá paso a paso.</p>
               <div id="expeditionStageEffects" class="stage-effects"></div>
             </div>
           </div>
@@ -227,9 +278,7 @@
           </div>
         </div>
 
-        <div id="report" class="report is-hidden">
-          <p class="muted">La historia completa de la expedición aparecerá aquí.</p>
-        </div>
+        <div id="report" class="report is-hidden"></div>
         <div id="reportActions" class="report-actions is-hidden">
           <button type="button" class="secondary" data-go="party">Revisar Party</button>
           <button type="button" class="secondary" data-go="chronicle">Ver Crónica</button>
@@ -253,9 +302,39 @@
       <aside class="panel relations-panel">
         <span class="section-kicker">VÍNCULOS</span>
         <h2>Relaciones</h2>
-        <p>Bond, tensión y atracción cambian con lo vivido en expediciones.</p>
+        <p>Amistad, tensión y romance afectan cómo actúan los aventureros juntos.</p>
         <div id="relations" class="relations-list"></div>
       </aside>
+    </section>
+
+    <section id="screen-legacy" class="game-screen" data-screen-panel="legacy">
+      <aside class="panel legacy-summary">
+        <span class="section-kicker">GENERACIONES</span>
+        <h2>Legado del gremio</h2>
+        <p>Los aventureros pueden retirarse, formar familias y dejar descendientes que algún día llegarán al tablón de reclutamiento.</p>
+        <div class="summary-grid">
+          <div class="mini-stat"><span>Retirados</span><strong id="retiredCount">0</strong></div>
+          <div class="mini-stat"><span>Parejas</span><strong id="coupleCount">0</strong></div>
+          <div class="mini-stat"><span>Descendientes</span><strong id="childCount">0</strong></div>
+          <div class="mini-stat"><span>Generación</span><strong id="generationStat">1</strong></div>
+        </div>
+        <button id="advanceYearBtn" type="button" class="secondary full">Pasar 1 año de gremio</button>
+        <p class="tiny">Útil para recuperación, envejecimiento y probar el ciclo generacional. El gremio permanece activo durante el salto.</p>
+      </aside>
+
+      <article class="legacy-columns">
+        <div class="panel">
+          <span class="section-kicker">FAMILIAS</span>
+          <h2>Parejas y descendientes</h2>
+          <div id="families" class="legacy-list"></div>
+        </div>
+
+        <div class="panel">
+          <span class="section-kicker">VETERANOS</span>
+          <h2>Miembros retirados</h2>
+          <div id="retiredList" class="legacy-list"></div>
+        </div>
+      </article>
     </section>
   </main>
 
