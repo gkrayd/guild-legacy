@@ -3,50 +3,50 @@
 Guild Legacy is a mobile-landscape medieval fantasy guild simulation centered on autonomous expeditions, persistent adventurers, relationships, recovery and generational legacy.
 
 ## Version
-V1.1 — Balance & Playtest Pass
+V1.2 — Story Theater
 
 ## Core loop
 Recruit adventurers -> form a party -> plan a mission -> watch an autonomous expedition -> review consequences -> improve the guild -> build relationships and careers -> retire veterans -> continue through future generations.
 
-## V1.1 additions
-- Campaign diagnostics panel for playtesting
-- Win-rate, economy, injury-frequency, relationship, level and campaign-age metrics
-- Balance notes generated from actual campaign outcomes
-- Adventurer titles earned from real history and accomplishments
-- Specializations now have mechanical party roles, not only power bonuses
-- Pre-mission success/risk estimate using the selected party and plan
-- Slower passive Bond/attraction growth so important relationships depend more on events and guild life
-- Persistent campaign statistics for future balance passes
-- V1.0 save compatibility
+## V1.2 additions
+- New Story Theater expedition composition based on the approved visual reference
+- Five-stage illustrated-style ribbon: Travel, Exploration, Encounter, Camp and Return
+- Large central story scene with a different atmosphere for each expedition stage
+- Persistent party portrait cards inside the scene
+- Featured-character highlighting during narrative moments
+- Parchment-style event card with current event, consequences and character quote
+- Animated feedback for positive events, danger/injuries and relationship moments
+- Recent-consequence cards for Bond, XP, injuries, gold and other outcomes
+- Stage-event list and expedition narrative log
+- Planning UI automatically compresses while an expedition is running
+- Final expedition results stay integrated into the same storytelling composition
+- Scene/event art is currently procedural/placeholder so real illustrations can replace it later without changing the layout
+
+## V1.1 systems retained
+- Campaign diagnostics and balance metrics
+- Adventurer titles earned through play
+- Mechanical specialization roles
+- Pre-mission success/risk estimates
+- Slower, event-driven relationship growth
 
 ## Core systems
-- Mobile landscape interface
-- Six base classes
+- Six base classes and specializations
 - Personality traits, origins and motivations
-- Recruitment and persistent character histories
-- Party composition, chemistry and class synergies
+- Party chemistry and class synergies
 - Mission planning: pace, priority and supplies
-- Five-stage visual expedition sequence
-- Varied travel, exploration, encounter and camp events
-- Mission-specific enemies and class moments
-- XP, levels and player-selected class specializations
-- Named injuries with recovery time
-- Guild infirmary, tavern, training yard and library
-- Reputation-gated regions and mission progression
-- Guild life events between expeditions
-- Friendship, rivalry, attraction, romance and marriage
-- Voluntary and age-based retirement
-- Families, descendants and inherited traits
-- Descendants entering recruitment at adventuring age
-- Multi-generation guild legacy screen
-- Chronicle and local browser save
-- Migration from the V0.x browser save
+- Named injuries and recovery
+- Guild facilities and life events
+- Reputation-gated regions and contracts
+- Relationships, romance and marriage
+- Retirement, families and descendants
+- Multi-generation legacy
+- Chronicle and browser save migration
+
+## Visual direction
+The Story Theater composition is now the visual contract for future expedition art. Future scene illustrations and character portraits should plug into this structure rather than redesigning the expedition screen.
 
 ## Tone
-Grounded medieval fantasy with meaningful consequences but not grimdark. Danger, injury and death can occur, but the overall experience emphasizes adventure, community, recovery, friendship, family and legacy.
-
-## Visual status
-The current build remains intentionally lightweight visually. Gameplay, simulation and balance are being validated before the final visual production pass, including the future expedition portraits discussed for each expedition stage.
+Grounded medieval fantasy with meaningful consequences but not grimdark. The game emphasizes adventure, community, recovery, friendship, family and legacy.
 
 ## Web build
 https://gkrayd.github.io/guild-legacy/
