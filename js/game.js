@@ -434,8 +434,8 @@
     checkRegionUnlocks();
   }
 
-  function advanceDays(days,{guildEvent=false}={}){
-    recoverDays(days);
+  function advanceDays(days,{guildEvent=false,recover=true}={}){
+    if(recover) recoverDays(days);
     let remaining=days;
     while(remaining>0){
       const toYear=91-state.day;
@@ -501,9 +501,11 @@
     state.selected=state.selected.filter(id=>id!==hero.id);
     addMemory(hero,'dejó las expediciones y pasó a ser veterano del gremio.');
     addChronicle(`${hero.name} se retira de la vida de aventurero y queda como veterano del gremio.`);
-    saveState(false);
-    renderAll();
-    navigate('legacy');
+    if(voluntary){
+      saveState(false);
+      renderAll();
+      navigate('legacy');
+    }
   }
 
   function processRelationships(yearly=false){
@@ -573,6 +575,7 @@
       handled.add(key);
       const a=member(aId),b=member(bId);
       if(!a||!b||a.alive===false||b.alive===false) return;
+      if(a.age<20||b.age<20||a.age>45||b.age>45) return;
       const existing=state.children.filter(c=>c.parentIds.includes(a.id)&&c.parentIds.includes(b.id));
       if(existing.length>=3) return;
       if(Math.random()<0.35) createChild(a,b);
@@ -959,7 +962,8 @@
       }
     }
 
-    advanceDays(days);
+    state.missionsDone++;
+    advanceDays(days,{recover:false});
     if(Math.random()<0.3) triggerGuildLifeEvent(false);
     processRelationships(false);
     if(oldRep!==state.rep) checkRegionUnlocks();
