@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#171510" />
-  <title>Guild Legacy — V1.0 Core Complete</title>
+  <title>Guild Legacy — V1.1 Balance & Playtest</title>
   <link rel="stylesheet" href="css/game.css" />
 </head>
 <body>
@@ -21,7 +21,7 @@
       <div class="brand">
         <span class="eyebrow">GUILD LEGACY</span>
         <strong>El Grifo de Plata</strong>
-        <span class="build">V1.0</span>
+        <span class="build">V1.1</span>
       </div>
 
       <div class="hud-stats">
@@ -103,6 +103,25 @@
             <div id="guildLifeEvent" class="life-event-card">Con el paso del tiempo ocurrirán pequeñas historias entre expediciones.</div>
           </div>
         </div>
+
+        <details class="panel campaign-diagnostics">
+          <summary>
+            <span>
+              <span class="section-kicker">PLAYTEST</span>
+              <b>Registro de campaña</b>
+            </span>
+            <span class="tiny">Abrir métricas</span>
+          </summary>
+          <div class="diagnostic-grid">
+            <div class="diagnostic-card"><span>Victorias</span><strong id="winRateStat">—</strong></div>
+            <div class="diagnostic-card"><span>Economía</span><strong id="goldFlowStat">—</strong></div>
+            <div class="diagnostic-card"><span>Heridas</span><strong id="injuryRateStat">—</strong></div>
+            <div class="diagnostic-card"><span>Vínculos</span><strong id="relationshipStat">—</strong></div>
+            <div class="diagnostic-card"><span>Nivel medio</span><strong id="avgLevelStat">—</strong></div>
+            <div class="diagnostic-card"><span>Edad campaña</span><strong id="campaignAgeStat">—</strong></div>
+          </div>
+          <div id="balanceNotes" class="balance-notes">Todavía no hay suficientes expediciones para evaluar el ritmo de la campaña.</div>
+        </details>
       </article>
     </section>
 
