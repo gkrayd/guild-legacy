@@ -455,3 +455,61 @@ p{color:var(--muted)}
   .summary-card{font-size:9px;padding:6px}
   .expedition-controls button{min-width:120px;min-height:34px;font-size:10px;padding:5px 7px}
 }
+
+
+/* V1.0 Core Complete */
+.main-nav.six{grid-template-columns:repeat(6,1fr)}
+.guild-right-stack{display:grid;gap:10px}
+.guild-lower-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:10px}
+.guild-life-panel{display:flex;flex-direction:column;gap:8px}
+.life-event-card{padding:10px;border:1px solid var(--border-soft);background:var(--panel3);font-size:12px;line-height:1.4;color:var(--muted)}
+.facility-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.facility-card{padding:8px;border:1px solid var(--border-soft);background:var(--panel2);display:grid;grid-template-columns:auto 1fr auto;gap:7px;align-items:center;font-size:11px}
+.facility-icon{font-size:19px}
+.facility-card button{min-height:32px;padding:5px 7px;font-size:10px}
+.facility-card .level{color:var(--accent)}
+.status-badge{padding:5px 8px;border:1px solid var(--border-soft);background:var(--panel3);font-size:11px}
+.detail-card.wide{grid-column:1/-1}
+.history-scroll{max-height:150px;overflow:auto}
+.chemistry-box{padding:9px;border:1px solid var(--border-soft);background:var(--panel3);font-size:12px;color:var(--muted)}
+.planning-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.planning-grid label{display:grid;gap:4px;font-size:10px;color:var(--muted)}
+.planning-grid select{min-height:36px;padding:6px 7px;font-size:11px}
+.plan-summary{padding:8px;border:1px solid var(--border-soft);background:var(--panel3);font-size:11px;color:var(--muted);line-height:1.4}
+#screen-legacy{grid-template-columns:minmax(230px,.7fr) minmax(0,1.3fr)}
+.legacy-summary{display:flex;flex-direction:column;gap:10px}
+.legacy-summary>p{font-size:12px;line-height:1.45}
+.legacy-columns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.legacy-list{display:grid;gap:6px;margin-top:8px}
+.legacy-card{padding:9px;border:1px solid var(--border-soft);background:var(--panel2);font-size:11px}
+.legacy-card strong{display:block;color:var(--text);margin-bottom:3px}
+.family-tree{display:grid;gap:5px}
+.family-child{padding:6px 8px;border-left:3px solid var(--accent-dark);background:var(--panel3)}
+.spec-choice{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.spec-choice button{min-height:54px;text-align:left;font-size:11px;padding:7px}
+.injury-pill{border-color:#6d3f37!important}
+.relationship-good{border-left:3px solid #53643b}
+.relationship-tense{border-left:3px solid #6d3f37}
+.relationship-romance{border-left:3px solid #6e536b}
+.locked-mission{color:#7d735f}
+.mission-region{display:inline-block;padding:2px 5px;margin-left:4px;border:1px solid var(--border-soft);font-size:9px;color:var(--muted)}
+.heir-badge{color:var(--accent)}
+.retired-badge{color:#9ea8c9}
+.guild-event-positive{color:var(--good)}
+.guild-event-negative{color:var(--bad)}
+
+@media (max-width:900px) and (orientation:landscape){
+  .main-nav.six .nav-btn{font-size:10px}
+  .guild-lower-grid{grid-template-columns:1.2fr .8fr}
+  .facility-card{font-size:9px;padding:6px}
+  .facility-card button{font-size:9px}
+  .planning-grid{gap:4px}
+  .legacy-columns{gap:6px}
+  .legacy-card{font-size:9px;padding:6px}
+}
+@media (max-width:700px) and (orientation:landscape){
+  .facility-grid{grid-template-columns:1fr}
+  .planning-grid{grid-template-columns:1fr}
+  .guild-lower-grid{grid-template-columns:1fr}
+  .legacy-columns{grid-template-columns:1fr}
+}
