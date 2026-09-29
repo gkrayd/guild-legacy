@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Guild Legacy — Prototype V0.2</title>
+  <link rel="stylesheet" href="css/game.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">PROTOTIPO DE GAMEPLAY</div>
+        <h1>Guild Legacy</h1>
+        <p>El Grifo de Plata · V0.2</p>
+      </div>
+      <div class="top-actions">
+        <button id="saveBtn" class="secondary">Guardar</button>
+        <button id="resetBtn" class="danger">Reiniciar partida</button>
+      </div>
+    </header>
+
+    <section class="stats-grid">
+      <article class="stat"><span>Tesorería</span><strong id="goldStat">1000 oro</strong></article>
+      <article class="stat"><span>Calendario</span><strong id="dayStat">Día 1 · Año 1</strong></article>
+      <article class="stat"><span>Reputación</span><strong id="repStat">0</strong></article>
+      <article class="stat"><span>Expediciones</span><strong id="missionsStat">0</strong></article>
+    </section>
+
+    <section class="two-col">
+      <article class="panel">
+        <div class="panel-title-row">
+          <div>
+            <h2>Aspirantes</h2>
+            <p>Cada aventurero tiene clase, edad y dos rasgos.</p>
+          </div>
+          <button id="refreshApplicantsBtn" class="secondary">Nuevos aspirantes · 20 oro</button>
+        </div>
+        <div id="applicants" class="cards"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Miembros del gremio</h2>
+        <p>Selecciona entre 2 y 4 miembros para la próxima expedición.</p>
+        <div id="roster" class="stack"></div>
+        <div id="partyInfo" class="party-info">Party actual: 0 / 4</div>
+      </article>
+    </section>
+
+    <section class="two-col mission-layout">
+      <article class="panel">
+        <h2>Tablón de misiones</h2>
+        <p>Elige el destino. Los aventureros resolverán la expedición por sí mismos.</p>
+        <label for="missionSelect">Destino</label>
+        <select id="missionSelect"></select>
+        <div id="missionDetails" class="mission-details"></div>
+        <button id="dispatchBtn" class="primary full">Enviar expedición</button>
+        <div id="notice" class="notice" aria-live="polite"></div>
+      </article>
+
+      <article class="panel report-panel">
+        <div class="panel-title-row">
+          <h2>Crónica de la expedición</h2>
+          <span id="resultTag" class="tag">Sin expediciones</span>
+        </div>
+        <div id="report" class="report">
+          <p>La personalidad todavía no ha sido puesta a prueba.</p>
+          <p class="muted">Recluta una party y envíala a una misión para generar la primera historia.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="two-col">
+      <article class="panel">
+        <h2>Relaciones</h2>
+        <p>Bond, tensión y atracción pueden evolucionar por separado.</p>
+        <div id="relations" class="stack"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Historia del gremio</h2>
+        <p>Los acontecimientos importantes quedan registrados.</p>
+        <div id="chronicle" class="stack chronicle"></div>
+      </article>
+    </section>
+
+    <footer>
+      Build V0.2 standalone · Gameplay first · Placeholder visuals
+    </footer>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
