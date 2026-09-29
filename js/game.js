@@ -522,7 +522,7 @@
 
     expeditionView={
       mission,
-      party:party.filter(x=>x.alive!==false),
+      party,
       stages,
       summary,
       success,
@@ -818,6 +818,13 @@
 
   $('missionSelect').addEventListener('change',renderMission);
   $('dispatchBtn').addEventListener('click',dispatch);
+  $('expeditionContinueBtn').addEventListener('click',advanceExpedition);
+  $('toggleReportBtn').addEventListener('click',()=>{
+    const report=$('report');
+    const hidden=report.classList.contains('is-hidden');
+    report.classList.toggle('is-hidden',!hidden);
+    $('toggleReportBtn').textContent=hidden?'Ocultar relato completo':'Ver relato completo';
+  });
   $('saveBtn').addEventListener('click',()=>saveState(true));
 
   $('refreshApplicantsBtn').addEventListener('click',()=>{
