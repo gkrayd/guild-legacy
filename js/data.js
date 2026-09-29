@@ -20,7 +20,7 @@ window.GUILD_DATA = {
     Compasivo:{risk:1,social:2,desc:'ayuda incluso con coste propio'},
     Codicioso:{risk:1,social:-2,desc:'prioriza tesoros'},
     Disciplinado:{risk:-1,social:1,desc:'mantiene la formación'}
-  },,
+  },
   expeditionEvents: {
     travel: [
       {icon:'🌤️',title:'Un camino tranquilo',text:'La party avanza con buen ritmo mientras el paisaje cambia alrededor del camino.'},
