@@ -1103,3 +1103,19 @@ p{color:var(--muted)}
   .story-screen.expedition-running .story-planning{grid-template-columns:1fr auto}
   .story-screen.expedition-running .story-plan-main{grid-template-columns:auto minmax(160px,1fr)}
 }
+
+
+/* V1.2 Story Theater hotfix — contract detail overflow only.
+   Keep original composition; remove the redundant detail block from the planning header. */
+.story-plan-main{
+  grid-template-columns:auto minmax(170px,1fr) !important;
+  align-items:end !important;
+}
+
+.story-plan-main>div:first-child{
+  grid-row:auto !important;
+}
+
+.story-mission-details{
+  display:none !important;
+}
