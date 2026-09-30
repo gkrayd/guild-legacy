@@ -205,6 +205,16 @@ window.GUILD_DATA = {
     {id:'romance_walk',kind:'romance',title:'Un paseo después de cenar'},
     {id:'veteran_story',kind:'veteran',title:'Una historia de veteranos'}
   ],,
+  balance:{
+    rosterCap:14,
+    retirementAge:58,
+    familyGrowthChance:0.30,
+    deathBase:0.02,
+    deathPerDifficulty:0.003,
+    relationshipBondScale:0.9,
+    expeditionRewardScale:0.96,
+    injuryRiskScale:0.92
+  },
   veteranRoles:{
     mentor:{name:'Mentor',icon:'✦',desc:'Transfiere experiencia a aventureros jóvenes.',effect:'xp'},
     steward:{name:'Mayordomo del gremio',icon:'⌂',desc:'Ayuda a controlar gastos y organización.',effect:'economy'},
