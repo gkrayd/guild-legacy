@@ -38,6 +38,12 @@
       children:[],
       lastGuildEvent:'El gremio abre sus puertas por primera vez.',
       regionNotices:['frontier'],
+      factionRep:{greenward:0,crownless:0,astral:0,highclans:0},
+      completedMissionChains:[],
+      guildIdentityScores:{protector:0,explorer:0,mercenary:0,scholar:0,fellowship:0,renowned:0},
+      guildTitle:'Gremio en formación',
+      veteranAssignments:{},
+      lineageRegistry:{},
       stats:{
         missions:0,wins:0,losses:0,goldEarned:0,goldSpent:0,
         injuries:0,deaths:0,recruits:0,facilitySpent:0,supplySpent:0,guildEvents:0
@@ -92,6 +98,10 @@
     h.pendingScar=h.pendingScar||null;
     h.wins=h.wins||0;
     h.missionTypes=h.missionTypes||{};
+    h.veteranRole=h.veteranRole||null;
+    h.mentorId=h.mentorId||null;
+    h.lineageName=h.lineageName||null;
+    h.familyExpectation=h.familyExpectation||null;
 
     if(typeof h.injury==='number' && h.injury>0){
       const template=DATA.injuries[Math.min(DATA.injuries.length-1,Math.max(0,h.injury*2-1))];
@@ -148,6 +158,12 @@
     state.children=Array.isArray(state.children)?state.children:[];
     state.chronicle=Array.isArray(state.chronicle)?state.chronicle:[];
     state.regionNotices=Array.isArray(state.regionNotices)?state.regionNotices:['frontier'];
+    state.factionRep={...freshState().factionRep,...(state.factionRep||{})};
+    state.completedMissionChains=Array.isArray(state.completedMissionChains)?state.completedMissionChains:[];
+    state.guildIdentityScores={...freshState().guildIdentityScores,...(state.guildIdentityScores||{})};
+    state.guildTitle=state.guildTitle||'Gremio en formación';
+    state.veteranAssignments=state.veteranAssignments||{};
+    state.lineageRegistry=state.lineageRegistry||{};
     state.stats={...freshState().stats,...(state.stats||{})};
     state.roster=(state.roster||[]).map(h=>normalizeHero(h,false));
     state.applicants=(state.applicants||[]).map(h=>normalizeHero(h,true));
