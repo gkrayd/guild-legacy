@@ -967,6 +967,50 @@
     return {progressed:true,milestone};
   }
 
+  function buildExpeditionChain(party,mission,plan){
+    const travelPool=DATA.expeditionChains?.travel||[];
+    const explorationPool=DATA.expeditionChains?.exploration||[];
+    let travel=rand(travelPool);
+    let exploration=rand(explorationPool);
+
+    const hasScout=party.some(h=>h.cls==='Picaro'||h.cls==='Arquera'||['scout','ranger'].includes(h.specialization));
+    const hasArcane=party.some(h=>h.cls==='Maga'||h.cls==='Sacerdotisa');
+    const prudent=party.filter(h=>(h.traits||[]).includes('Prudente')).length;
+    const impulsive=party.filter(h=>(h.traits||[]).includes('Impulsivo')).length;
+
+    if((state.planning.supply==='maps'||hasScout) && Math.random()<0.6){
+      exploration=explorationPool.find(e=>e.id==='shortcut')||exploration;
+    }
+    if(['arcane','undead','legendary'].includes(mission.type) && hasArcane && Math.random()<0.55){
+      exploration=explorationPool.find(e=>e.id==='warning')||exploration;
+    }
+    if(state.planning.pace==='fast' && Math.random()<0.4){
+      travel=travelPool.find(e=>e.id==='bad_weather')||travel;
+    }
+    if(state.planning.pace==='cautious' && Math.random()<0.5){
+      travel=travelPool.find(e=>e.id==='quiet_road')||travel;
+    }
+
+    let chance=(travel?.chance||0)+(exploration?.chance||0);
+    let injury=(travel?.injury||0)+(exploration?.injury||0);
+    let treasure=(travel?.treasure||0)+(exploration?.treasure||0);
+
+    if(hasScout){chance+=0.015;injury-=0.01;}
+    if(hasArcane && ['arcane','undead','legendary'].includes(mission.type)) chance+=0.015;
+    injury-=Math.min(0.03,prudent*0.01);
+    injury+=Math.min(0.03,impulsive*0.01);
+
+    const thread=`${travel?.title||'El viaje'} → ${exploration?.title||'La exploración'}`;
+    return {
+      travel,exploration,
+      chance:clamp(chance,-0.08,0.12),
+      injury:clamp(injury,-0.10,0.10),
+      treasure:clamp(treasure,0,0.16),
+      thread,
+      hasScout,hasArcane
+    };
+  }
+
   function setExpeditionControls(running){
     $('dispatchBtn').disabled=running;
     $('missionSelect').disabled=running;
