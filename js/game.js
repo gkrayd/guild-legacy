@@ -1919,7 +1919,7 @@
       seen.add(key);
       const [a,b]=key.split('-').map(Number);
       const A=member(a),B=member(b);
-      if(A&&B) couples.push({A,B,r});
+      if(A&&B) couples.push({A,B,r,key});
     });
 
     $('retiredCount').textContent=retired.length;
@@ -1928,21 +1928,39 @@
     const gens=[1,...state.roster.map(h=>h.generation||1),...state.children.map(c=>c.generation||1)];
     $('generationStat').textContent=Math.max(...gens);
 
-    $('families').innerHTML=couples.length?couples.map(({A,B,r})=>{
+    $('families').innerHTML=couples.length?couples.map(({A,B,r,key})=>{
       const kids=state.children.filter(c=>c.parentIds.includes(A.id)&&c.parentIds.includes(B.id));
-      return `<div class="legacy-card family-tree">
-        <strong>${r.married?'💍':'♥'} ${A.name} + ${B.name}</strong>
-        <span>${r.married?'Familia establecida':'Pareja'} · Bond ${r.bond}</span>
-        ${kids.length?kids.map(c=>`<div class="family-child"><b>${c.name}</b> · ${c.age} años · Gen.${c.generation}${c.introduced?' · aspirante disponible':''}<br><span class="tiny">${c.traits.join(' · ')}</span></div>`).join(''):'<span class="tiny">Todavía no tienen descendientes registrados.</span>'}
+      const lineage=state.lineageRegistry?.[[A.id,B.id].sort((x,y)=>x-y).join('-')];
+      const familyName=lineage?.title||A.lineageName||B.lineageName||`Familia de ${A.name} y ${B.name}`;
+      return `<div class="legacy-card family-tree lineage-card">
+        <div class="lineage-header">
+          <span class="lineage-seal">◇</span>
+          <span><strong>${familyName}</strong><br><span class="tiny">${lineage?.desc||'Una nueva familia está escribiendo su historia dentro del gremio.'}</span></span>
+        </div>
+        <span>${r.married?'Matrimonio':'Pareja'} · Bond ${r.bond} · Fundadores: ${A.name} + ${B.name}</span>
+        ${kids.length?kids.map(c=>{
+          const siblings=kids.filter(x=>x.id!==c.id).map(x=>x.name);
+          const expectation=c.familyExpectation==='propio'?'Busca un camino propio':'Siente el peso del legado familiar';
+          return `<div class="family-child">
+            <b>${c.name}</b> · ${c.age} años · Gen.${c.generation}${c.introduced?' · aspirante disponible':''}<br>
+            <span class="tiny">${c.traits.join(' · ')} · ${expectation}</span>
+            ${siblings.length?`<br><span class="tiny">Hermanos: ${siblings.join(', ')}</span>`:''}
+          </div>`;
+        }).join(''):'<span class="tiny">Todavía no tienen descendientes registrados.</span>'}
       </div>`;
     }).join(''):'<div class="legacy-card">Todavía no hay parejas establecidas.</div>';
 
-    $('retiredList').innerHTML=retired.length?retired.map(h=>`<div class="legacy-card">
-      <strong>${DATA.classes[h.cls].icon} ${h.name}</strong>
-      ${specializationData(h)?.name||h.cls} · Nv.${h.level} · ${h.age} años · ${h.expeditions} expediciones<br>
-      <span class="tiny">Generación ${h.generation||1}${h.spouseId?' · Tiene familia':''}</span>
-    </div>`).join(''):'<div class="legacy-card">Aún no hay veteranos retirados.</div>';
+    $('retiredList').innerHTML=retired.length?retired.map(h=>{
+      const role=h.veteranRole&&DATA.veteranRoles[h.veteranRole];
+      return `<div class="legacy-card veteran-card">
+        <strong>${DATA.classes[h.cls].icon} ${h.name}</strong>
+        ${specializationData(h)?.name||h.cls} · Nv.${h.level} · ${h.age} años · ${h.expeditions} expediciones<br>
+        <span class="tiny">Generación ${h.generation||1}${h.lineageName?' · '+h.lineageName:''}</span><br>
+        <span class="veteran-role">${role?role.icon+' '+role.name:'Veterano sin función asignada'}</span>
+      </div>`;
+    }).join(''):'<div class="legacy-card">Aún no hay veteranos retirados.</div>';
   }
+
 
   function renderAll(){
     renderHeader();
