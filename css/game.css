@@ -1180,3 +1180,45 @@ p{color:var(--muted)}
   from{box-shadow:0 7px 14px rgba(0,0,0,.38),0 0 8px rgba(209,170,84,.12)}
   to{box-shadow:0 7px 14px rgba(0,0,0,.38),0 0 20px rgba(209,170,84,.28)}
 }
+
+
+/* V1.5 — Character Stories */
+.character-story-pill{
+  border-color:#6d5935!important;
+  background:
+    linear-gradient(135deg,rgba(201,155,75,.08),transparent 55%),
+    var(--panel3)!important;
+}
+.story-arc-title{
+  color:#f0d79a;
+  font-weight:700;
+}
+.story-progress{
+  display:inline-block;
+  margin-top:5px;
+  padding:3px 6px;
+  border:1px solid #665337;
+  background:#211a12;
+  color:#cdb983;
+  font-size:9px;
+}
+.story-scar-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:5px;
+}
+.story-scar{
+  display:inline-block;
+  padding:3px 6px;
+  border:1px solid #74483e;
+  background:#241713;
+  color:#d8a294;
+  font-size:9px;
+}
+.story-highlight{
+  border-color:#806534!important;
+  background:
+    linear-gradient(90deg,rgba(201,155,75,.12),transparent 70%),
+    var(--panel2)!important;
+}
