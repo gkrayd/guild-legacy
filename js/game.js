@@ -1628,19 +1628,33 @@
     $('detailStatusBadge').textContent=h.retired?'Veterano retirado':h.injury?`${h.injury.name} · ${h.injury.daysLeft} días`:'Activo y sano';
 
     const titles=heroTitles(h);
+    const arc=characterArcStatus(h);
+    const arcProgress=arc.complete
+      ?'Arco completado'
+      :arc.next
+        ?`${arc.progress}/${arc.next.need} hacia “${arc.next.title}”`
+        :'Historia en desarrollo';
+    const scars=(h.scars||[]).map(s=>`<span class="story-scar">✦ ${s.title}</span>`).join('');
+
     $('detailIdentity').innerHTML=`
       <span class="detail-pill"><b>Origen</b><br>${h.origin}</span>
       <span class="detail-pill"><b>Motivación</b><br>${mot.name}<br><span class="tiny">${mot.desc}</span></span>
       <span class="detail-pill"><b>Rasgos</b><br>${h.traits.join(' · ')}</span>
+      <span class="detail-pill character-story-pill"><b>Historia personal</b><br>
+        <span class="story-arc-title">${arc.latest?.title||'El comienzo de una historia'}</span><br>
+        <span class="tiny">${arc.latest?.text||mot.desc}</span><br>
+        <span class="story-progress">${arcProgress}</span>
+      </span>
       <span class="detail-pill"><b>Títulos e hitos</b><br>
         <span class="title-list">${titles.length?titles.map(t=>`<span class="title-badge">${t}</span>`).join(''):'<span class="tiny">Todavía no ha ganado ningún título.</span>'}</span>
-      </span>`;
+      </span>
+      ${scars?`<span class="detail-pill"><b>Cicatrices y marcas</b><br><span class="story-scar-list">${scars}</span></span>`:''}`;
 
     $('detailState').innerHTML=`
       <span class="detail-pill"><b>XP</b> ${h.xp}/${threshold(h.level)}</span>
       <span class="detail-pill"><b>Expediciones</b> ${h.expeditions}</span>
       <span class="detail-pill ${h.injury?'injury-pill':''}"><b>Salud</b><br>${h.injury?`${h.injury.name} · ${h.injury.daysLeft} días<br><span class="tiny">${h.injury.desc}</span>`:'Sano'}</span>
-      <span class="detail-pill"><b>Objetivo personal</b><br>${mot.name} · ${h.motivationProgress||0}/3</span>`;
+      <span class="detail-pill"><b>Objetivo personal</b><br>${mot.name}<br><span class="tiny">${arcProgress}</span></span>`;
 
     if(spec){
       $('detailSpecialization').innerHTML=`<span class="detail-pill"><b>${spec.name}</b><br>${spec.ability}<br><span class="tiny">${spec.desc}</span></span>`;
@@ -1667,7 +1681,10 @@
     if(kids.length) relHtml+=kids.map(c=>`<span class="detail-pill"><b>${c.name}</b> · descendiente · ${c.age} años · Gen.${c.generation}</span>`).join('');
     $('detailRelations').innerHTML=relHtml;
 
-    $('detailHistory').innerHTML=(h.memory?.length?h.memory:['Su historia en el gremio apenas comienza.']).map(x=>`<span class="detail-pill">${x}</span>`).join('');
+    const storyHistory=[];
+    if(h.lastStoryBeat) storyHistory.push(`<span class="detail-pill story-highlight"><b>Último hito personal</b><br>${h.lastStoryBeat}</span>`);
+    (h.memory?.length?h.memory:['Su historia en el gremio apenas comienza.']).forEach(x=>storyHistory.push(`<span class="detail-pill">${x}</span>`));
+    $('detailHistory').innerHTML=storyHistory.join('');
 
     const add=$('detailAddPartyBtn');
     if(h.retired){
