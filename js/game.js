@@ -19,6 +19,16 @@
   const pairKey = (a,b) => [a,b].sort((x,y)=>x-y).join('-');
   const member = id => state.roster.find(x => x.id === id);
   const activeMembers = () => state.roster.filter(h => h.alive !== false && !h.retired);
+  const CLASS_ART={
+    Guerrero:'assets/icons/class-warrior.svg',
+    Maga:'assets/icons/class-mage.svg',
+    Sacerdotisa:'assets/icons/class-priestess.svg',
+    Picaro:'assets/icons/class-rogue.svg',
+    Arquera:'assets/icons/class-archer.svg',
+    Paladin:'assets/icons/class-paladin.svg'
+  };
+  const classIconAsset=cls=>CLASS_ART[cls]||'assets/art/grifo-silver.svg';
+  const classIconHtml=(cls,label='')=>`<img class="class-art-icon" src="${classIconAsset(cls)}" alt="${label||cls}" loading="lazy">`;
 
   function freshState(){
     return {
