@@ -1,72 +1,44 @@
 # Guild Legacy
 
-Guild Legacy is a mobile-landscape medieval fantasy guild simulation about autonomous expeditions, persistent adventurers, relationships, families, retirement, world memory and multi-generation legacy.
-
 ## Version
-V2.4 — Art & Presentation
+V2.5 — True Art Pass
 
-## V2.4 Art & Presentation
-- New Medieval Storybook Fantasy visual direction
-- Original Silver Griffin emblem and branded header
-- Five illustrated expedition scenes: Travel, Exploration, Encounter, Camp and Return
-- Four illustrated regional identities: Frontera Verde, Viejo Reino, Marcas Arcanas and Tierras Altas
-- Illustrated guild facilities: infirmary, tavern, training yard and library
-- Six custom class icons and six class portrait busts
-- Illustrated Silver Griffin guild hall
-- Character portraits display legacy, injury and scar state overlays
-- Regional art appears during mission planning without changing the approved Story Theater composition
-- Page-like expedition stage transitions and more cohesive parchment/wood/silver presentation
-- Existing V1.2 mission-layout hotfix remains intact
+V2.5 replaces the provisional programmatic illustration layer with the approved painterly visual direction while preserving the stable Story Theater composition and all V2 simulation systems.
 
-## V2.0 Simulation Complete
-- Explicit campaign balance profile for roster size, retirement, family growth, death risk, injuries, economy and relationship growth
-- Veteran career bonuses are integrated into expedition planning and progression
-- Multi-generation campaigns remain compatible with older V1.x saves
+### Phase 1 — Character Portrait Pass
+- Six painterly class portraits: Guerrero, Maga, Pícaro, Arquera, Sacerdotisa and Paladín.
+- Portraits are used in character detail and expedition party cards.
+- Legacy, injury, scar and age states remain layered over the portrait system.
 
-## V1.9 Guild Identity
-Guild identity emerges from actual play rather than a menu selection. Possible identities include:
-- Baluarte del Camino
-- Buscadores del Horizonte
-- Compañía del Grifo
-- Custodios de lo Antiguo
-- Hogar del Grifo
-- Estandarte de Plata
+### Phase 2 — Expedition Story Scenes
+- Painterly scenes for Viaje, Exploración, Encuentro, Campamento and Regreso.
+- Existing stage narrative, event cards and consequences remain mechanically driven.
+- Page-reveal transition retained and polished.
 
-## V1.8 World & Mission Content
-- Regional factions remember guild activity
-- Mission history is persistent
-- Multi-contract regional story chains unlock sequentially
-- Completing a chain grants a regional title and reputation
-- Added follow-up contracts for the Viejo Reino, Marcas Arcanas and Tierras Altas
+### Phase 3 — Region Art Pass
+- Visual identities for Frontera Verde, Viejo Reino, Marcas Arcanas and Tierras Altas.
+- Mission planning changes atmosphere according to the selected region.
 
-## V1.7 Careers & Retirement 2.0
-Retired adventurers remain mechanically useful as:
-- Mentors
-- Stewards
-- Instructors
-- Archivists
+### Phase 4 — Guild Facilities Pass
+- Illustrated treatments for Taberna, Enfermería, Patio de entrenamiento and Biblioteca.
+- Facility level continues to affect presentation and mechanics.
 
-Veterans can be reassigned and can mentor younger generations.
+### Phase 5 — UI / Iconography Polish
+- Dark wood, parchment, silver and gold visual language.
+- Blue-and-gold active navigation inspired by the approved mock.
+- Reworked buttons, HUD panels, cards, class medallions, stage ribbon and event parchment.
+- No aggressive compacting or Story Theater layout redesign.
 
-## V1.6 Legacy 2.0
-- Named family lineages
-- Inherited class affinities and traits
-- Visible siblings and family expectations
-- Descendants may follow or reject the family path
-- Multi-generation family identity persists inside the guild
+### Production rule
+An asset is not considered final merely because it functions in HTML. Final illustration quality is judged against the approved painterly Guild Legacy mock.
 
-## Character Stories retained
-- Personal arcs driven by motivations
-- Story milestones during expeditions
-- Persistent scars and memories
-- Contextual Living Guild events
-- Relationship, romance, marriage and family systems
+### Safety checkpoints
+- checkpoint-v2.0-simulation-complete
+- checkpoint-v2.4-art-presentation
+- v2.5-true-art-pass
 
-## Visual contract
-The approved Story Theater layout remains the structural contract. Art replaces placeholders inside the composition rather than redesigning the screen.
-
-## Tone
-Grounded medieval fantasy with consequences, but not grimdark. Adventure, community, warmth, recovery, relationships and legacy remain the core emotional pillars.
+## Systems retained
+Legacy 2.0, veteran careers, world memory, mission chains, guild identity, Character Stories, relationships, families, facilities and multi-generation simulation remain intact.
 
 ## Web build
 https://gkrayd.github.io/guild-legacy/
