@@ -1523,3 +1523,123 @@ body{
   font-size:7px;
   letter-spacing:.08em;
 }
+
+
+/* V2.2–V2.4 portrait + guild presentation */
+.portrait-shell{
+  position:relative;
+  display:block;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#17130f;
+}
+.portrait-art{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  transition:filter .25s ease,transform .25s ease;
+}
+.portrait-young .portrait-art{filter:saturate(1.02) brightness(1.03)}
+.portrait-veteran .portrait-art{filter:saturate(.78) contrast(1.05) sepia(.08)}
+.portrait-badge{
+  position:absolute;
+  left:5px;
+  bottom:5px;
+  padding:2px 4px;
+  border:1px solid #715c38;
+  background:rgba(21,17,12,.88);
+  color:#e9d19a;
+  font-size:6px;
+  letter-spacing:.08em;
+}
+.portrait-badge.injured{
+  left:auto;
+  right:5px;
+  color:#edb0a5;
+  border-color:#8e4f45;
+}
+.portrait-scar-mark{
+  position:absolute;
+  right:7px;
+  top:6px;
+  color:#d9b166;
+  text-shadow:0 1px 2px #000;
+  font-size:12px;
+}
+.portrait-detail{
+  width:100%;
+  height:100%;
+}
+.portrait-story{
+  width:100%;
+  height:100%;
+}
+.story-hero-portrait{
+  overflow:hidden;
+  padding:0!important;
+}
+.story-hero-portrait .portrait-art{
+  object-position:center 22%;
+}
+.portrait-placeholder{
+  padding:0!important;
+  overflow:hidden;
+}
+
+.guild-vista{
+  position:relative;
+  min-height:94px;
+  border:1px solid #5f4c30;
+  overflow:hidden;
+  background:
+    linear-gradient(90deg,rgba(17,14,10,.28),rgba(17,14,10,.04)),
+    url("../assets/art/guild-hall.svg") center 46%/cover no-repeat;
+  box-shadow:inset 0 -40px 50px rgba(15,12,9,.34);
+}
+.guild-vista::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(0deg,rgba(17,14,10,.62),transparent 62%);
+}
+.guild-vista>span{
+  position:absolute;
+  z-index:1;
+  left:8px;
+  bottom:6px;
+  color:#f0ddb0;
+  font-size:8px;
+  letter-spacing:.12em;
+  text-shadow:0 2px 3px #000;
+}
+
+/* Give the five stages a page-like rhythm without moving layout. */
+.exp-step.active{
+  box-shadow:inset 0 -2px #caa65e,0 0 12px rgba(202,166,94,.10);
+}
+.exp-step.done{
+  opacity:.72;
+}
+.story-stage-ribbon{
+  background:
+    linear-gradient(180deg,rgba(55,45,31,.92),rgba(28,23,17,.96)),
+    #2a241b;
+}
+.story-titlebar{
+  border-color:#5d4b31;
+  background:
+    linear-gradient(90deg,rgba(52,42,29,.96),rgba(32,27,20,.96));
+}
+
+/* Visual cohesion for custom iconography. */
+.applicant-card .class-art-icon,
+.adventurer-row .class-art-icon,
+.party-row .class-art-icon{
+  border-radius:50%;
+  box-shadow:0 0 0 1px rgba(181,141,77,.18);
+}
+.facility-card-art:hover .facility-art{
+  transform:translateY(-1px);
+}
