@@ -85,6 +85,11 @@
     h.spouseId=h.spouseId||null;
     h.children=Array.isArray(h.children)?h.children:[];
     h.motivationProgress=h.motivationProgress||0;
+    h.storyProgress=Number.isFinite(h.storyProgress)?h.storyProgress:0;
+    h.storyMilestones=Array.isArray(h.storyMilestones)?h.storyMilestones:[];
+    h.scars=Array.isArray(h.scars)?h.scars:[];
+    h.lastStoryBeat=h.lastStoryBeat||'';
+    h.pendingScar=h.pendingScar||null;
     h.wins=h.wins||0;
     h.missionTypes=h.missionTypes||{};
 
@@ -198,8 +203,19 @@
     if((hero.missionTypes?.undead||0)>=3) titles.push('Guardián de las Criptas');
     if((hero.missionTypes?.combat||0)>=5) titles.push('Curtido en batalla');
     if((hero.children||[]).length) titles.push('Fundador de linaje');
+    const arc=characterArcStatus(hero);
+    if(arc?.latest?.title) titles.push(arc.latest.title);
+    if(hero.scars?.length) titles.push('Marcado por la aventura');
     if(hero.retired) titles.push('Veterano retirado');
-    return [...new Set(titles)].slice(0,5);
+    return [...new Set(titles)].slice(0,6);
+  }
+
+  function characterArcStatus(hero){
+    const beats=DATA.characterArcs?.[hero.motivation]||[];
+    const unlocked=beats.filter(b=>(hero.storyProgress||0)>=b.need);
+    const latest=unlocked.length?unlocked[unlocked.length-1]:null;
+    const next=beats.find(b=>(hero.storyProgress||0)<b.need)||null;
+    return {beats,latest,next,progress:hero.storyProgress||0,complete:!!beats.length&&!next};
   }
 
   function specializationPartyModifiers(party,mission){
