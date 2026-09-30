@@ -204,7 +204,7 @@ window.GUILD_DATA = {
     {id:'rivalry_argument',kind:'tension',title:'Una discusión que todos escucharon'},
     {id:'romance_walk',kind:'romance',title:'Un paseo después de cenar'},
     {id:'veteran_story',kind:'veteran',title:'Una historia de veteranos'}
-  ],,
+  ],
   balance:{
     rosterCap:14,
     retirementAge:58,
@@ -245,7 +245,7 @@ window.GUILD_DATA = {
     {id:'protectors',name:'Casa Protectora',desc:'Descendientes con facilidad para profesiones defensivas.',classes:['Guerrero','Paladin','Sacerdotisa']},
     {id:'seekers',name:'Casa de Buscadores',desc:'Una familia atraída por secretos y exploración.',classes:['Maga','Picaro','Arquera']},
     {id:'veterans',name:'Casa de Veteranos',desc:'La experiencia del gremio pesa en cada nueva generación.',classes:Object.keys({Guerrero:1,Maga:1,Sacerdotisa:1,Picaro:1,Arquera:1,Paladin:1})}
-  ]
+  ],
   guildLifeEvents:[
     {id:'festival',title:'Festival local',text:'El gremio participa en una celebración del pueblo.',gold:-25,rep:2,bond:2},
     {id:'merchant',title:'Mercader visitante',text:'Un mercader ofrece suministros y conversa con los aventureros.',gold:-15,rep:1,bond:0},
