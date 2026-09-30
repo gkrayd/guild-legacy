@@ -1058,6 +1058,10 @@
 
   function storyQuoteFor(stage,hero,index){
     const name=hero?.name||'La party';
+    if(index===3 && hero && expeditionView?.storyBeats?.some(x=>x.hero.id===hero.id)){
+      const beat=expeditionView.storyBeats.find(x=>x.hero.id===hero.id);
+      return `“Creo que esta expedición cambió algo para mí.” — ${name} · ${beat?.milestone?.title||'Hito personal'}`;
+    }
     const quotes=[
       `“Un buen viaje empieza antes de abandonar el camino conocido.” — ${name}`,
       `“Miremos dos veces. Los lugares viejos siempre guardan algo.” — ${name}`,
@@ -1376,6 +1380,13 @@
         kind:h.injury?'':'good'
       });
     });
+
+    if(storyBeats.length){
+      const lead=storyBeats[0];
+      stages[3].icon='✦';
+      stages[3].title=`${lead.hero.name}: ${lead.milestone.title}`;
+      stages[3].text=`${lead.milestone.text} Para ${lead.hero.name}, esta expedición ya no es solo otro contrato.`;
+    }
 
     const tavern=state.facilities.tavern||0;
     for(let i=0;i<party.length;i++){
