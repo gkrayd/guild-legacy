@@ -29,6 +29,25 @@
   };
   const classIconAsset=cls=>CLASS_ART[cls]||'assets/art/grifo-silver.svg';
   const classIconHtml=(cls,label='')=>`<img class="class-art-icon" src="${classIconAsset(cls)}" alt="${label||cls}" loading="lazy">`;
+  const PORTRAIT_ART={
+    Guerrero:'assets/portraits/warrior.svg',
+    Maga:'assets/portraits/mage.svg',
+    Sacerdotisa:'assets/portraits/priestess.svg',
+    Picaro:'assets/portraits/rogue.svg',
+    Arquera:'assets/portraits/archer.svg',
+    Paladin:'assets/portraits/paladin.svg'
+  };
+  const portraitAsset=cls=>PORTRAIT_ART[cls]||PORTRAIT_ART.Guerrero;
+  function portraitHtml(hero,extraClass=''){
+    const ageClass=hero.age>=50?'portrait-veteran':hero.age<=22?'portrait-young':'portrait-adult';
+    const legacy=(hero.generation||1)>1?'<span class="portrait-badge legacy">LEGADO</span>':'';
+    const injured=hero.injury?'<span class="portrait-badge injured">HERIDO</span>':'';
+    const scars=hero.scars?.length?'<span class="portrait-scar-mark">✦</span>':'';
+    return `<span class="portrait-shell ${ageClass} ${extraClass}">
+      <img class="portrait-art" src="${portraitAsset(hero.cls)}" alt="${hero.name}, ${hero.cls}" loading="lazy">
+      ${legacy}${injured}${scars}
+    </span>`;
+  }
 
   function freshState(){
     return {
@@ -1186,7 +1205,7 @@
       if(hasStoryBeat) classes.push('story-awakened');
       return `<div class="${classes.join(' ')}">
         <span class="story-hero-state">${stateIcon}</span>
-        <div class="story-hero-portrait">${classIconHtml(h.cls,h.cls)}</div>
+        <div class="story-hero-portrait">${portraitHtml(h,'portrait-story')}</div>
         <div class="story-hero-info">
           <b>${h.name}</b>
           <small>${spec?.name||h.cls} · Nv.${h.level}${h.injury?' · '+h.injury.name:''}</small>
@@ -1812,7 +1831,7 @@
     const spec=specializationData(h);
     const mot=motivationData(h);
 
-    $('detailPortrait').innerHTML=classIconHtml(h.cls,`${h.name}, ${h.cls}`);
+    $('detailPortrait').innerHTML=portraitHtml(h,'portrait-detail');
     $('detailName').textContent=h.name;
     $('detailMeta').textContent=`${spec?.name||h.cls} · Nv.${h.level} · ${h.age} años · Gen.${h.generation||1}`;
     $('detailStatusBadge').textContent=h.retired?'Veterano retirado':h.injury?`${h.injury.name} · ${h.injury.daysLeft} días`:'Activo y sano';
