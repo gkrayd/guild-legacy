@@ -1222,3 +1222,60 @@ p{color:var(--muted)}
     linear-gradient(90deg,rgba(201,155,75,.12),transparent 70%),
     var(--panel2)!important;
 }
+
+
+/* V1.9 — emergent guild identity */
+.guild-identity-card{
+  margin-top:10px;
+  padding:10px 11px;
+  border:1px solid #5c4a2f;
+  background:
+    linear-gradient(135deg,rgba(201,155,75,.10),transparent 58%),
+    var(--panel3);
+  display:grid;
+  gap:3px;
+}
+.guild-identity-card strong{
+  color:#efd597;
+  font-size:13px;
+}
+.guild-identity-card>span:last-child{
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.35;
+}
+
+.lineage-header{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-bottom:5px;
+}
+.lineage-seal{
+  width:26px;
+  height:26px;
+  border:1px solid #806437;
+  display:grid;
+  place-items:center;
+  color:#e1bd72;
+  background:#18130d;
+}
+.veteran-role{
+  display:inline-block;
+  margin-top:6px;
+  color:#dbc489;
+}
+.veteran-role-picker{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  margin-top:6px;
+}
+.veteran-role-picker button{
+  padding:4px 6px;
+  font-size:8px;
+}
+.veteran-role-picker button.active{
+  border-color:#b78a43;
+  color:#f2d899;
+}
