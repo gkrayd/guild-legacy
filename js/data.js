@@ -147,7 +147,7 @@ window.GUILD_DATA = {
     Sacerdotisa:['encuentra un pequeño santuario y propone detenerse unos minutos','reconoce símbolos religiosos antiguos y explica su significado'],
     Guerrero:['advierte que el terreno sería perfecto para una emboscada','encuentra señales de combate y reconstruye lo ocurrido'],
     Paladin:['descubre un emblema de una antigua orden','propone una formación más segura antes de entrar en una zona estrecha']
-  },,
+  },
   expeditionChains:{
     travel:[
       {id:'good_weather',title:'Cielo favorable',text:'El clima acompaña y la party conserva fuerzas para la exploración.',chance:0.025,injury:-0.015,tag:'Buen ritmo'},
