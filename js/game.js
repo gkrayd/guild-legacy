@@ -1548,6 +1548,7 @@
     const newlyInjured=party.filter(h=>h.injury && beforeInjury.get(h.id)!==h.injury.id);
 
     state.missionsDone++;
+    applyWorldMemory(mission,success);
     advanceDays(days,{recover:false});
     processRelationships(false);
     if(oldRep!==state.rep) checkRegionUnlocks();
@@ -1908,7 +1909,9 @@
       const reg=DATA.regions.find(r=>r.id===m.region);
       const o=document.createElement('option');
       o.value=m.id;
-      o.textContent=`${'★'.repeat(m.difficulty)} · ${m.name} · ${reg?.name||''}`;
+      const chain=missionChainFor(m.id);
+      const idx=chain?chain.missions.indexOf(m.id)+1:0;
+      o.textContent=`${'★'.repeat(m.difficulty)} · ${m.name} · ${reg?.name||''}${chain?` · ${chain.name} ${idx}/${chain.missions.length}`:''}`;
       select.appendChild(o);
     });
     if(current&&missions.some(m=>m.id===current)) select.value=current;
