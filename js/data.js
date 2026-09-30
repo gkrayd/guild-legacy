@@ -1,5 +1,5 @@
 window.GUILD_DATA = {
-  version:'1.2.4',
+  version:'1.2.5',
   classes:{
     Guerrero:{icon:'⚔️',role:'Defensor',power:16,ability:'Interceptar'},
     Maga:{icon:'✨',role:'Daño mágico',power:17,ability:'Explosión Arcana'},
