@@ -694,6 +694,26 @@
     notice(`${hero.name} ahora es ${spec.name}.`);
   }
 
+  function suggestedVeteranRole(hero){
+    if(hero.cls==='Maga'||hero.motivation==='knowledge') return 'archivist';
+    if(hero.cls==='Guerrero'||hero.cls==='Paladin'||hero.motivation==='mastery') return 'instructor';
+    if(hero.motivation==='wealth'||hero.motivation==='family') return 'steward';
+    return 'mentor';
+  }
+
+  function veteranBonuses(){
+    const retired=state.roster.filter(h=>h.retired&&h.alive!==false&&h.veteranRole);
+    const counts={mentor:0,steward:0,instructor:0,archivist:0};
+    retired.forEach(h=>{if(counts[h.veteranRole]!==undefined) counts[h.veteranRole]++;});
+    return {
+      counts,
+      xp:Math.min(.20,counts.mentor*.05),
+      supplyDiscount:Math.min(.20,counts.steward*.05),
+      success:Math.min(.06,counts.instructor*.015),
+      knowledge:Math.min(.06,counts.archivist*.015)
+    };
+  }
+
   function retireHero(hero,voluntary=true){
     if(!hero || hero.retired || hero.alive===false) return;
     if(voluntary && !(hero.age>=45 || (hero.level>=6 && hero.expeditions>=10))){
@@ -701,9 +721,12 @@
       return;
     }
     hero.retired=true;
+    hero.veteranRole=hero.veteranRole||suggestedVeteranRole(hero);
+    state.veteranAssignments[hero.id]=hero.veteranRole;
     state.selected=state.selected.filter(id=>id!==hero.id);
-    addMemory(hero,'dejó las expediciones y pasó a ser veterano del gremio.');
-    addChronicle(`${hero.name} se retira de la vida de aventurero y queda como veterano del gremio.`);
+    const role=DATA.veteranRoles[hero.veteranRole];
+    addMemory(hero,`dejó las expediciones y pasó a servir al gremio como ${role?.name||'veterano'}.`);
+    addChronicle(`${hero.name} se retira de la vida de aventurero y asume la función de ${role?.name||'veterano'}.`);
     if(voluntary){
       saveState(false);
       renderAll();
@@ -848,7 +871,7 @@
       injury:(pace.injury||0)+(priority.injury||0)+(supply.injury||0),
       reward:1+(pace.reward||0)+(priority.reward||0),
       treasure:priority.treasure||0,
-      cost:supply.cost||0,
+      cost:Math.max(0,Math.round((supply.cost||0)*(1-veteranBonuses().supplyDiscount))),
       days:pace.days||0
     };
   }
@@ -1291,11 +1314,12 @@
     const chemistry=partyChemistry(party);
     const roleMods=specializationPartyModifiers(party,mission);
     const chain=buildExpeditionChain(party,mission,plan);
-    const libBonus=(state.facilities.library||0)*0.015;
+    const veteran=veteranBonuses();
+    const libBonus=(state.facilities.library||0)*0.015+veteran.knowledge;
     const rawPower=party.reduce((sum,h)=>sum+heroPower(h),0)+syn.bonus;
     const target=mission.difficulty*25+party.length*8;
     const chance=clamp(
-      0.46+(rawPower-target)/100+plan.chance+libBonus+roleMods.success+chain.chance,
+      0.46+(rawPower-target)/100+plan.chance+libBonus+roleMods.success+chain.chance+veteran.success,
       0.12,0.95
     );
     const success=Math.random()<chance;
@@ -1405,7 +1429,7 @@
       if(success) h.wins++;
 
       const training=state.facilities.training||0;
-      const xp=Math.round((success?38+mission.difficulty*23:18+mission.difficulty*10)*(1+training*0.1));
+      const xp=Math.round((success?38+mission.difficulty*23:18+mission.difficulty*10)*(1+training*0.1+veteran.xp));
       h.xp+=xp;
 
       const story=applyMotivationProgress(h,mission,success);
