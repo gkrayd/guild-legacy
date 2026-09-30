@@ -1689,3 +1689,182 @@ p{color:var(--muted)}
     font-size:7px;
   }
 }
+
+
+/* V1.2.5 — Authoritative mission planning layout.
+   This block intentionally overrides all legacy planning rules above. */
+#screen-mission .story-plan-v2{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  grid-template-rows:36px 26px !important;
+  gap:4px !important;
+  height:74px !important;
+  min-height:74px !important;
+  max-height:74px !important;
+  padding:5px 8px !important;
+  margin:0 0 6px !important;
+  overflow:hidden !important;
+  align-content:start !important;
+}
+
+#screen-mission .story-plan-row-primary{
+  display:grid !important;
+  grid-template-columns:120px minmax(280px,2fr) 110px 110px 120px minmax(180px,1.1fr) 170px !important;
+  gap:6px !important;
+  align-items:end !important;
+  height:36px !important;
+  min-height:36px !important;
+  max-height:36px !important;
+  overflow:hidden !important;
+}
+
+#screen-mission .story-plan-heading{
+  height:36px !important;
+  min-height:36px !important;
+  overflow:hidden !important;
+  align-self:start !important;
+}
+
+#screen-mission .story-plan-heading .section-kicker{
+  margin:0 0 1px !important;
+  font-size:8px !important;
+  line-height:1 !important;
+}
+
+#screen-mission .story-plan-heading h2{
+  margin:0 !important;
+  font-size:18px !important;
+  line-height:1 !important;
+}
+
+#screen-mission .story-plan-field{
+  display:grid !important;
+  grid-template-rows:10px 25px !important;
+  gap:1px !important;
+  height:36px !important;
+  min-height:36px !important;
+  overflow:hidden !important;
+  font-size:8px !important;
+  line-height:1 !important;
+}
+
+#screen-mission .story-plan-field select{
+  width:100% !important;
+  min-width:0 !important;
+  height:25px !important;
+  min-height:25px !important;
+  max-height:25px !important;
+  padding:2px 5px !important;
+  font-size:9px !important;
+  line-height:1 !important;
+}
+
+#screen-mission .story-plan-party{
+  height:25px !important;
+  min-height:25px !important;
+  max-height:25px !important;
+  padding:3px 6px !important;
+  margin:0 !important;
+  overflow:hidden !important;
+  white-space:nowrap !important;
+  text-overflow:ellipsis !important;
+  align-self:end !important;
+}
+
+#screen-mission .story-plan-party span{
+  display:inline !important;
+  margin:0 5px 0 0 !important;
+  font-size:8px !important;
+}
+
+#screen-mission .story-plan-party strong{
+  display:inline !important;
+  font-size:9px !important;
+}
+
+#screen-mission .story-plan-dispatch{
+  height:25px !important;
+  min-height:25px !important;
+  max-height:25px !important;
+  padding:2px 6px !important;
+  margin:0 !important;
+  font-size:9px !important;
+  line-height:1 !important;
+  align-self:end !important;
+}
+
+#screen-mission .story-plan-row-secondary{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  gap:6px !important;
+  height:26px !important;
+  min-height:26px !important;
+  max-height:26px !important;
+  overflow:hidden !important;
+  position:relative !important;
+  z-index:1 !important;
+}
+
+#screen-mission .story-plan-row-secondary > #missionDetails,
+#screen-mission .story-plan-row-secondary > #planSummary{
+  display:block !important;
+  grid-column:auto !important;
+  width:auto !important;
+  min-width:0 !important;
+  height:26px !important;
+  min-height:26px !important;
+  max-height:26px !important;
+  margin:0 !important;
+  padding:5px 7px !important;
+  overflow:hidden !important;
+  overflow-x:hidden !important;
+  overflow-y:hidden !important;
+  white-space:nowrap !important;
+  text-overflow:ellipsis !important;
+  scrollbar-width:none !important;
+  font-size:8px !important;
+  line-height:15px !important;
+  position:static !important;
+}
+
+#screen-mission .story-plan-row-secondary > #missionDetails::-webkit-scrollbar,
+#screen-mission .story-plan-row-secondary > #planSummary::-webkit-scrollbar{
+  display:none !important;
+  width:0 !important;
+  height:0 !important;
+}
+
+@media (min-width:901px) and (max-height:980px){
+  #screen-mission.story-screen.active{
+    height:calc(100dvh - 126px) !important;
+    overflow:hidden !important;
+  }
+
+  #screen-mission .story-theater-shell{
+    height:calc(100% - 80px) !important;
+    min-height:0 !important;
+  }
+
+  #screen-mission.expedition-running .story-plan-v2{
+    grid-template-rows:36px !important;
+    height:46px !important;
+    min-height:46px !important;
+    max-height:46px !important;
+  }
+
+  #screen-mission.expedition-running .story-plan-row-secondary{
+    display:none !important;
+  }
+
+  #screen-mission.expedition-running .story-plan-row-primary{
+    grid-template-columns:120px minmax(300px,2fr) 100px 100px 110px minmax(220px,1fr) 0 !important;
+  }
+
+  #screen-mission.expedition-running .story-plan-dispatch{
+    display:none !important;
+  }
+
+  #screen-mission.expedition-running .story-theater-shell{
+    height:calc(100% - 52px) !important;
+  }
+}
