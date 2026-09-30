@@ -40,6 +40,8 @@
       regionNotices:['frontier'],
       factionRep:{greenward:0,crownless:0,astral:0,highclans:0},
       completedMissionChains:[],
+      completedMissionIds:[],
+      missionHistory:{},
       guildIdentityScores:{protector:0,explorer:0,mercenary:0,scholar:0,fellowship:0,renowned:0},
       guildTitle:'Gremio en formación',
       veteranAssignments:{},
@@ -160,6 +162,8 @@
     state.regionNotices=Array.isArray(state.regionNotices)?state.regionNotices:['frontier'];
     state.factionRep={...freshState().factionRep,...(state.factionRep||{})};
     state.completedMissionChains=Array.isArray(state.completedMissionChains)?state.completedMissionChains:[];
+    state.completedMissionIds=Array.isArray(state.completedMissionIds)?state.completedMissionIds:[];
+    state.missionHistory=state.missionHistory||{};
     state.guildIdentityScores={...freshState().guildIdentityScores,...(state.guildIdentityScores||{})};
     state.guildTitle=state.guildTitle||'Gremio en formación';
     state.veteranAssignments=state.veteranAssignments||{};
@@ -849,11 +853,52 @@
     });
   }
 
+  function missionChainFor(missionId){
+    return (DATA.missionChains||[]).find(c=>c.missions.includes(missionId))||null;
+  }
+
+  function missionChainUnlocked(missionId){
+    const chain=missionChainFor(missionId);
+    if(!chain) return true;
+    const idx=chain.missions.indexOf(missionId);
+    if(idx<=0) return true;
+    return chain.missions.slice(0,idx).every(id=>state.completedMissionIds.includes(id));
+  }
+
   function unlockedMissions(){
     return DATA.missions.filter(m=>{
       const region=DATA.regions.find(r=>r.id===m.region);
-      return !region || state.regionNotices.includes(region.id);
+      const regionOpen=!region || state.regionNotices.includes(region.id);
+      return regionOpen && missionChainUnlocked(m.id);
     });
+  }
+
+  function applyWorldMemory(mission,success){
+    state.missionHistory[mission.id]=(state.missionHistory[mission.id]||0)+1;
+    if(success && !state.completedMissionIds.includes(mission.id)){
+      state.completedMissionIds.push(mission.id);
+    }
+
+    const faction=(DATA.factions||[]).find(f=>f.region===mission.region);
+    if(faction){
+      const delta=success?2+mission.difficulty:1;
+      state.factionRep[faction.id]=(state.factionRep[faction.id]||0)+delta;
+      addChronicle(`${faction.name} registra la participación del gremio en ${mission.name}. Confianza +${delta}.`);
+    }
+
+    const chain=missionChainFor(mission.id);
+    if(chain && success){
+      const complete=chain.missions.every(id=>state.completedMissionIds.includes(id));
+      if(complete && !state.completedMissionChains.includes(chain.id)){
+        state.completedMissionChains.push(chain.id);
+        state.rep+=4;
+        addChronicle(`Cadena completada: ${chain.name}. El gremio recibe el título regional “${chain.rewardTitle}”.`);
+      }else{
+        const nextId=chain.missions.find(id=>!state.completedMissionIds.includes(id));
+        const nextMission=DATA.missions.find(m=>m.id===nextId);
+        if(nextMission) addChronicle(`La historia de “${chain.name}” continúa: se abre el siguiente capítulo, ${nextMission.name}.`);
+      }
+    }
   }
 
   function upgradeFacility(key){
