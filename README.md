@@ -3,10 +3,17 @@
 Guild Legacy is a mobile-landscape medieval fantasy guild simulation centered on autonomous expeditions, persistent adventurers, relationships, recovery and generational legacy.
 
 ## Version
-V1.2.4 — Cache-Safe Layout
+V1.2.5 — Planning Isolation
 
 ## Core loop
 Recruit adventurers -> form a party -> plan a mission -> watch an autonomous expedition -> review consequences -> improve the guild -> build relationships and careers -> retire veterans -> continue through future generations.
+
+## V1.2.5 planning isolation
+- Mission details and plan summary are now rendered as single-line compact strings
+- Secondary planning row has fixed isolated height with no vertical overflow or scrollbars
+- Explicit final CSS rules override all earlier planning styles
+- Primary row width budget fits the 1180px game shell used on 1920×1080 desktops
+- Long text truncates with ellipsis and remains available as a tooltip
 
 ## V1.2.4 cache-safe layout
 - Versioned CSS and JavaScript URLs prevent GitHub Pages/browser cache from mixing new HTML with old styles
