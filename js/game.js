@@ -486,6 +486,95 @@
     return e;
   }
 
+  function triggerContextualGuildMoment(preferredParty=[],meta={}){
+    const heroes=activeMembers();
+    if(heroes.length<2) return null;
+
+    const party=(preferredParty||[]).filter(h=>h&&h.alive!==false&&!h.retired);
+    const injured=(meta.injured||party.filter(h=>h.injury)).filter(Boolean);
+    const leveled=(meta.leveled||[]).filter(Boolean);
+
+    if(injured.length){
+      const patient=rand(injured);
+      const visitors=heroes.filter(h=>h.id!==patient.id).sort((a,b)=>relation(b.id,patient.id).bond-relation(a.id,patient.id).bond);
+      const visitor=visitors[0];
+      if(visitor){
+        changeRelation(patient.id,visitor.id,3,0,0);
+        const text=`${visitor.name} pasó parte de la tarde acompañando a ${patient.name} durante su recuperación de ${patient.injury?.name?.toLowerCase()||'una herida'}.`;
+        state.lastGuildEvent=`Una visita durante la recuperación: ${text}`;
+        addChronicle(text);
+        addMemory(patient,`${visitor.name} le visitó durante su recuperación.`);
+        addMemory(visitor,`acompañó a ${patient.name} mientras se recuperaba.`);
+        return {kind:'injury',title:'Una visita durante la recuperación',text};
+      }
+    }
+
+    if(leveled.length){
+      const hero=rand(leveled);
+      const friend=heroes.filter(h=>h.id!==hero.id).sort((a,b)=>relation(b.id,hero.id).bond-relation(a.id,hero.id).bond)[0];
+      if(friend) changeRelation(hero.id,friend.id,2,0,0);
+      const text=friend
+        ?`${friend.name} organizó un pequeño brindis cuando ${hero.name} alcanzó el nivel ${hero.level}.`
+        :`El gremio celebró que ${hero.name} alcanzara el nivel ${hero.level}.`;
+      state.lastGuildEvent=`Brindis por un nuevo nivel: ${text}`;
+      addChronicle(text);
+      addMemory(hero,'el gremio celebró uno de sus ascensos.');
+      return {kind:'level',title:'Brindis por un nuevo nivel',text};
+    }
+
+    const romance=Object.entries(state.relations).map(([key,r])=>{
+      const [a,b]=key.split('-').map(Number);
+      return {a:member(a),b:member(b),r};
+    }).filter(x=>x.a&&x.b&&(x.r.romance||x.r.married));
+    if(romance.length && Math.random()<0.34){
+      const pair=rand(romance);
+      changeRelation(pair.a.id,pair.b.id,2,0,1);
+      const text=`${pair.a.name} y ${pair.b.name} salieron a caminar después de cenar y regresaron bastante más tarde que el resto.`;
+      state.lastGuildEvent=`Un paseo después de cenar: ${text}`;
+      addChronicle(text);
+      return {kind:'romance',title:'Un paseo después de cenar',text};
+    }
+
+    const bonds=Object.entries(state.relations).map(([key,r])=>{
+      const [a,b]=key.split('-').map(Number);
+      return {a:member(a),b:member(b),r};
+    }).filter(x=>x.a&&x.b&&x.r.bond>=35&&x.r.tension<35);
+    if(bonds.length){
+      const pair=rand(bonds);
+      changeRelation(pair.a.id,pair.b.id,2,0,0);
+      const text=`${pair.a.name} y ${pair.b.name} aprovecharon una tarde tranquila para entrenar juntos sin necesidad de una misión de por medio.`;
+      state.lastGuildEvent=`Entrenamiento entre compañeros: ${text}`;
+      addChronicle(text);
+      return {kind:'bond',title:'Entrenamiento entre compañeros',text};
+    }
+
+    const tensions=Object.entries(state.relations).map(([key,r])=>{
+      const [a,b]=key.split('-').map(Number);
+      return {a:member(a),b:member(b),r};
+    }).filter(x=>x.a&&x.b&&x.r.tension>=35);
+    if(tensions.length){
+      const pair=rand(tensions);
+      pair.r.tension=Math.max(0,pair.r.tension-3);
+      pair.r.status=relationStatus(pair.r);
+      const text=`${pair.a.name} y ${pair.b.name} tuvieron una discusión incómoda en la sala común, pero al menos dijeron algunas cosas que llevaban tiempo guardándose.`;
+      state.lastGuildEvent=`Una discusión que todos escucharon: ${text}`;
+      addChronicle(text);
+      return {kind:'tension',title:'Una discusión que todos escucharon',text};
+    }
+
+    const retired=state.roster.filter(h=>h.retired&&h.alive!==false);
+    if(retired.length){
+      const veteran=rand(retired);
+      const listener=rand(heroes);
+      const text=`${veteran.name} pasó la noche contando a ${listener.name} cómo eran las expediciones cuando aún salía con una party.`;
+      state.lastGuildEvent=`Una historia de veteranos: ${text}`;
+      addChronicle(text);
+      addMemory(listener,`escuchó una vieja historia de ${veteran.name}.`);
+      return {kind:'veteran',title:'Una historia de veteranos',text};
+    }
+    return null;
+  }
+
   function processYearChange(){
     state.roster.forEach(h=>{
       if(h.alive!==false) h.age=(h.age||18)+1;
@@ -539,7 +628,8 @@
   }
 
   function advanceWeek(){
-    advanceDays(7,{guildEvent:true});
+    advanceDays(7,{guildEvent:false});
+    if(!triggerContextualGuildMoment()) triggerGuildLifeEvent(true);
     renderAll();
     notice('Pasó una semana en el gremio.');
   }
