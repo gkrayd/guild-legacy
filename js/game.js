@@ -1981,8 +1981,25 @@
         ${specializationData(h)?.name||h.cls} · Nv.${h.level} · ${h.age} años · ${h.expeditions} expediciones<br>
         <span class="tiny">Generación ${h.generation||1}${h.lineageName?' · '+h.lineageName:''}</span><br>
         <span class="veteran-role">${role?role.icon+' '+role.name:'Veterano sin función asignada'}</span>
+        <div class="veteran-role-picker">
+          ${Object.entries(DATA.veteranRoles).map(([key,info])=>`<button type="button" data-veteran-id="${h.id}" data-veteran-role="${key}" class="${h.veteranRole===key?'active':''}">${info.name}</button>`).join('')}
+        </div>
       </div>`;
     }).join(''):'<div class="legacy-card">Aún no hay veteranos retirados.</div>';
+
+    document.querySelectorAll('[data-veteran-role]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const hero=member(Number(btn.dataset.veteranId));
+        const roleKey=btn.dataset.veteranRole;
+        if(!hero||!hero.retired||!DATA.veteranRoles[roleKey]) return;
+        hero.veteranRole=roleKey;
+        state.veteranAssignments[hero.id]=roleKey;
+        addChronicle(`${hero.name} comienza a servir al gremio como ${DATA.veteranRoles[roleKey].name}.`);
+        saveState(false);
+        renderLegacy();
+        renderMission();
+      });
+    });
   }
 
 
