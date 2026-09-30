@@ -1390,3 +1390,126 @@ p{color:var(--muted)}
   .story-main{min-height:280px}
   .story-scene{min-height:280px}
 }
+
+
+/* V1.2.2 — Planning bar overlap fix */
+@media (min-width:901px) and (max-height:980px){
+  #screen-mission.story-screen.active{
+    height:calc(100dvh - 126px);
+  }
+
+  .story-planning{
+    height:100px;
+    min-height:100px;
+    max-height:100px;
+    overflow:hidden;
+    align-items:center;
+    padding:7px 8px;
+  }
+
+  .story-plan-main{
+    min-height:0;
+    grid-template-columns:150px minmax(160px,1fr);
+    grid-template-rows:auto auto;
+    align-items:center;
+    gap:4px 8px;
+  }
+
+  .story-plan-main>div:first-child{
+    grid-row:1 / 3;
+    align-self:center;
+  }
+
+  .story-plan-main .section-kicker{
+    margin-bottom:2px;
+    font-size:8px;
+  }
+
+  .story-plan-main h2{
+    font-size:18px;
+    line-height:1;
+  }
+
+  .story-contract{
+    align-self:end;
+    font-size:9px;
+  }
+
+  .story-contract select,
+  .story-planning-grid select{
+    min-height:30px;
+    height:30px;
+  }
+
+  .story-mission-details{
+    align-self:start;
+    min-height:34px;
+    max-height:38px;
+    overflow:hidden;
+    line-height:1.2;
+  }
+
+  .story-planning-grid{
+    align-self:center;
+  }
+
+  .story-plan-summary{
+    align-self:center;
+    max-height:76px;
+    overflow:auto;
+  }
+
+  .story-launch{
+    align-self:center;
+  }
+
+  .story-theater-shell{
+    height:calc(100% - 106px);
+  }
+
+  .story-theater{
+    grid-template-rows:42px 34px minmax(0,1fr) 78px;
+  }
+
+  .story-bottom,
+  .story-bottom-panel{
+    height:78px;
+    min-height:78px;
+  }
+
+  .story-log{
+    max-height:52px;
+  }
+
+  .story-summary{
+    bottom:87px;
+  }
+}
+
+/* Once an expedition starts, planning becomes a compact status strip without clipping. */
+@media (min-width:901px) and (max-height:980px){
+  .story-screen.expedition-running .story-planning{
+    height:58px;
+    min-height:58px;
+    max-height:58px;
+    grid-template-columns:minmax(360px,1fr) minmax(260px,.75fr);
+    padding:5px 8px;
+  }
+
+  .story-screen.expedition-running .story-plan-main{
+    grid-template-columns:145px minmax(170px,1fr);
+  }
+
+  .story-screen.expedition-running .story-plan-main h2{
+    font-size:16px;
+  }
+
+  .story-screen.expedition-running .story-contract select{
+    min-height:28px;
+    height:28px;
+  }
+
+  .story-screen.expedition-running .story-theater-shell{
+    height:calc(100% - 64px);
+  }
+}
