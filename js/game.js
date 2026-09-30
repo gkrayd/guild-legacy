@@ -1670,7 +1670,7 @@
   });
 
   $('resetBtn').addEventListener('click',()=>{
-    if(!window.confirm('¿Reiniciar toda la partida V1.2 y borrar el guardado local?')) return;
+    if(!window.confirm('¿Reiniciar toda la partida V1.2.3 y borrar el guardado local?')) return;
     localStorage.removeItem(SAVE_KEY);
     localStorage.removeItem(LEGACY_SAVE_KEY);
     state=freshState();
