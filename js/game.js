@@ -631,6 +631,18 @@
     });
 
     state.roster.filter(h=>h.alive!==false&&!h.retired&&h.age>=55).forEach(h=>retireHero(h,false));
+
+    const mentors=state.roster.filter(h=>h.retired&&h.alive!==false&&h.veteranRole==='mentor');
+    const pupils=activeMembers().filter(h=>h.age<=25||(h.generation||1)>1);
+    if(mentors.length&&pupils.length){
+      const mentor=rand(mentors), pupil=rand(pupils);
+      pupil.xp+=30;
+      pupil.mentorId=mentor.id;
+      addMemory(pupil,`recibió entrenamiento personal de ${mentor.name}.`);
+      addChronicle(`${mentor.name}, ya retirado, comienza a orientar a ${pupil.name} como mentor.`);
+      levelHeroIfNeeded(pupil);
+    }
+
     processRelationships(true);
     processFamilyGrowth();
     checkRegionUnlocks();
