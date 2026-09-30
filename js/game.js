@@ -1549,6 +1549,7 @@
 
     state.missionsDone++;
     applyWorldMemory(mission,success);
+    updateGuildIdentity(mission,success,party);
     advanceDays(days,{recover:false});
     processRelationships(false);
     if(oldRep!==state.rep) checkRegionUnlocks();
@@ -1670,7 +1671,35 @@
     $('balanceNotes').textContent=notes.join(' ');
   }
 
+  function updateGuildIdentity(mission=null,success=null,party=[]){
+    const scores=state.guildIdentityScores;
+    if(mission){
+      if(state.planning.priority==='safety') scores.protector+=2;
+      if(state.planning.priority==='treasure') scores.mercenary+=2;
+      if(state.planning.supply==='maps'||mission.type==='exploration') scores.explorer+=2;
+      if(['arcane','undead','legendary'].includes(mission.type)) scores.scholar+=1;
+      if(success){
+        scores.renowned+=1+Math.max(0,mission.difficulty-2);
+        if(party.length && party.every(h=>!h.injury)) scores.protector+=1;
+      }
+      if((state.completedMissionChains||[]).length) scores.renowned+=0.5;
+    }
+
+    const meaningful=Object.values(state.relations||{}).filter(r=>r.bond>=40||r.romance||r.married).length;
+    scores.fellowship=Math.max(scores.fellowship||0,Math.floor(meaningful/2)+(state.children?.length||0));
+    scores.scholar=Math.max(scores.scholar||0,(state.facilities.library||0)*2);
+    scores.explorer=Math.max(scores.explorer||0,(state.missionHistory?.forest||0)+(state.missionHistory?.watchtower||0));
+    scores.renowned=Math.max(scores.renowned||0,Math.floor(state.rep/5));
+
+    const ranked=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+    const [key,value]=ranked[0]||['renowned',0];
+    const identity=DATA.guildIdentities?.[key];
+    state.guildTitle=value>=3&&identity?identity.name:'Gremio en formación';
+    return identity&&value>=3?identity:null;
+  }
+
   function renderHeader(){
+    const guildIdentity=updateGuildIdentity();
     $('goldStat').textContent=state.gold;
     $('dayStat').textContent=state.day;
     $('yearStat').textContent=state.year;
@@ -1690,6 +1719,8 @@
     $('overviewParty').textContent=state.selected.length;
     $('rosterCount').textContent=`${active.length} miembro${active.length===1?'':'s'}`;
     $('chronicleCount').textContent=`${state.chronicle.length} eventos`;
+    if($('guildIdentityTitle')) $('guildIdentityTitle').textContent=guildIdentity?`${guildIdentity.icon} ${guildIdentity.name}`:'Gremio en formación';
+    if($('guildIdentityDesc')) $('guildIdentityDesc').textContent=guildIdentity?.desc||'Las decisiones del gremio irán definiendo cómo lo ve el mundo.';
   }
 
   function renderApplicants(){
