@@ -1493,9 +1493,9 @@
       return;
     }
     const region=DATA.regions.find(r=>r.id===m.region);
-    $('missionDetails').innerHTML=`<b>${m.name}</b> <span class="mission-region">${region?.name||''}</span><br>
-      <span class="small">${m.desc}</span><br><br>
-      Dificultad: ${'★'.repeat(m.difficulty)}${'☆'.repeat(Math.max(0,5-m.difficulty))} · Duración base: ${m.days} días · Recompensa: ${m.reward} oro`;
+    const missionLine=`${m.name} · ${region?.name||''} · ${'★'.repeat(m.difficulty)}${'☆'.repeat(Math.max(0,5-m.difficulty))} · ${m.days} días · ${m.reward} oro · ${m.desc}`;
+    $('missionDetails').textContent=missionLine;
+    $('missionDetails').title=missionLine;
 
     renderPlanSummary();
     renderMissionParty();
@@ -1511,7 +1511,7 @@
 
     const party=state.selected.map(member).filter(canDeploy);
     const mission=DATA.missions.find(m=>m.id===$('missionSelect').value);
-    let estimate='';
+    let partyEstimate='Party incompleta';
     if(party.length>=2&&mission){
       const syn=partySynergy(party);
       const roleMods=specializationPartyModifiers(party,mission);
@@ -1520,16 +1520,12 @@
       const target=mission.difficulty*25+party.length*8;
       const chance=clamp(0.46+(rawPower-target)/100+p.chance+libBonus+roleMods.success,0.12,0.95);
       const finalRisk=p.injury+roleMods.injury;
-      estimate=`<br><b>Estimación con esta party:</b> ${Math.round(chance*100)}% de éxito · riesgo ${Math.round(finalRisk*100)>=0?'+':''}${Math.round(finalRisk*100)}%`;
-      if(roleMods.notes.length) estimate+=`<br><span class="tiny">Especializaciones activas: ${roleMods.notes.join(' · ')}</span>`;
-    }else{
-      estimate='<br><span class="tiny">Forma una party de al menos 2 miembros para ver una estimación completa.</span>';
+      partyEstimate=`Party: ${Math.round(chance*100)}% éxito · riesgo ${Math.round(finalRisk*100)>=0?'+':''}${Math.round(finalRisk*100)}%`;
     }
 
-    $('planSummary').innerHTML=`<b>Plan del maestro del gremio</b><br>
-      Éxito ${pct>=0?'+':''}${pct}% · Riesgo de herida ${risk>=0?'+':''}${risk}% · Recompensa ×${p.reward.toFixed(2)} · Coste ${p.cost} oro
-      ${estimate}<br>
-      <span class="tiny">${p.pace.desc} ${p.priority.desc} ${p.supply.desc}</span>`;
+    const summary=`Plan · Éxito ${pct>=0?'+':''}${pct}% · Herida ${risk>=0?'+':''}${risk}% · Recompensa ×${p.reward.toFixed(2)} · Coste ${p.cost} · ${partyEstimate}`;
+    $('planSummary').textContent=summary;
+    $('planSummary').title=`${summary} — ${p.pace.desc} ${p.priority.desc} ${p.supply.desc}`;
     saveState(false);
   }
 
@@ -1670,7 +1666,7 @@
   });
 
   $('resetBtn').addEventListener('click',()=>{
-    if(!window.confirm('¿Reiniciar toda la partida V1.2.4 y borrar el guardado local?')) return;
+    if(!window.confirm('¿Reiniciar toda la partida V1.2.5 y borrar el guardado local?')) return;
     localStorage.removeItem(SAVE_KEY);
     localStorage.removeItem(LEGACY_SAVE_KEY);
     state=freshState();
