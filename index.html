@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#171510" />
-  <title>Guild Legacy — V1.2.2 Story Theater Layout Fix</title>
+  <title>Guild Legacy — V1.2.3 Planning Rebuild</title>
   <link rel="stylesheet" href="css/game.css" />
 </head>
 <body>
@@ -21,7 +21,7 @@
       <div class="brand">
         <span class="eyebrow">GUILD LEGACY</span>
         <strong>El Grifo de Plata</strong>
-        <span class="build">V1.2.2</span>
+        <span class="build">V1.2.3</span>
       </div>
 
       <div class="hud-stats">
@@ -221,38 +221,40 @@
     </section>
 
     <section id="screen-mission" class="game-screen mission-screen story-screen" data-screen-panel="mission">
-      <div class="story-planning panel">
-        <div class="story-plan-main">
-          <div>
-            <span class="section-kicker">PLANIFICACIÓN DE EXPEDICIÓN</span>
+      <div class="story-planning panel story-plan-v2">
+        <div class="story-plan-row story-plan-row-primary">
+          <div class="story-plan-heading">
+            <span class="section-kicker">PLANIFICACIÓN</span>
             <h2>Misión</h2>
           </div>
-          <label class="story-contract">Contrato
+
+          <label class="story-plan-field story-contract">Contrato
             <select id="missionSelect"></select>
           </label>
-          <div id="missionDetails" class="mission-details story-mission-details"></div>
-        </div>
 
-        <div class="planning-grid story-planning-grid">
-          <label>Ritmo
+          <label class="story-plan-field">Ritmo
             <select id="paceSelect"></select>
           </label>
-          <label>Prioridad
+
+          <label class="story-plan-field">Prioridad
             <select id="prioritySelect"></select>
           </label>
-          <label>Suministros
+
+          <label class="story-plan-field">Suministros
             <select id="supplySelect"></select>
           </label>
-        </div>
 
-        <div id="planSummary" class="plan-summary story-plan-summary"></div>
-
-        <div class="story-launch">
-          <div class="mission-party">
+          <div class="mission-party story-plan-party">
             <span>Party</span>
             <strong id="missionParty">Sin formar</strong>
           </div>
-          <button id="dispatchBtn" class="primary dispatch" type="button">ENVIAR EXPEDICIÓN</button>
+
+          <button id="dispatchBtn" class="primary dispatch story-plan-dispatch" type="button">ENVIAR EXPEDICIÓN</button>
+        </div>
+
+        <div class="story-plan-row story-plan-row-secondary">
+          <div id="missionDetails" class="mission-details story-mission-details"></div>
+          <div id="planSummary" class="plan-summary story-plan-summary"></div>
         </div>
       </div>
 
