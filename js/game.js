@@ -1225,50 +1225,104 @@
     const syn=partySynergy(party);
     const chemistry=partyChemistry(party);
     const roleMods=specializationPartyModifiers(party,mission);
+    const chain=buildExpeditionChain(party,mission,plan);
     const libBonus=(state.facilities.library||0)*0.015;
     const rawPower=party.reduce((sum,h)=>sum+heroPower(h),0)+syn.bonus;
     const target=mission.difficulty*25+party.length*8;
-    const chance=clamp(0.46+(rawPower-target)/100+plan.chance+libBonus+roleMods.success,0.12,0.95);
+    const chance=clamp(
+      0.46+(rawPower-target)/100+plan.chance+libBonus+roleMods.success+chain.chance,
+      0.12,0.95
+    );
     const success=Math.random()<chance;
     const days=Math.max(1,mission.days+plan.days);
     const extras={bonusGold:0};
     const lines=[];
     const heroResults=[];
+    const leveledHeroes=[];
+    const storyBeats=[];
+    const beforeInjury=new Map(party.map(h=>[h.id,h.injury?.id||null]));
 
     const stages=[
-      {icon:'🗺️',label:'ETAPA 1 · VIAJE',title:`Rumbo a ${mission.name}`,text:`La party inicia un viaje de ${days} días.`,effects:[]},
-      {icon:'🔎',label:'ETAPA 2 · EXPLORACIÓN',title:'El grupo estudia la zona',text:'La composición y personalidad del grupo empiezan a importar.',effects:[]},
-      {icon:'⚔️',label:'ETAPA 3 · ENCUENTRO',title:'El momento decisivo',text:'La party enfrenta el principal peligro del contrato.',effects:[]},
-      {icon:'🔥',label:'ETAPA 4 · CAMPAMENTO',title:'Tiempo para respirar',text:'El grupo descansa y procesa lo ocurrido.',effects:[]},
-      {icon:'🏰',label:'ETAPA 5 · REGRESO',title:'De vuelta al gremio',text:'El Grifo de Plata espera noticias.',effects:[]}
+      {
+        icon:'🗺️',label:'ETAPA 1 · VIAJE',
+        title:chain.travel?.title||`Rumbo a ${mission.name}`,
+        text:chain.travel?.text||`La party inicia un viaje de ${days} días.`,
+        effects:[]
+      },
+      {
+        icon:'🔎',label:'ETAPA 2 · EXPLORACIÓN',
+        title:chain.exploration?.title||'El grupo estudia la zona',
+        text:chain.exploration?.text||'La party estudia el terreno antes de seguir.',
+        effects:[]
+      },
+      {
+        icon:'⚔️',label:'ETAPA 3 · ENCUENTRO',
+        title:'El momento decisivo',
+        text:`Lo aprendido durante “${chain.exploration?.title||'la exploración'}” condiciona cómo llega la party al peligro.`,
+        effects:[]
+      },
+      {
+        icon:'🔥',label:'ETAPA 4 · CAMPAMENTO',
+        title:success?'Una noche después de la victoria':'Una noche para recomponerse',
+        text:success
+          ?`Alrededor del fuego, el grupo recuerda cómo ${chain.travel?.title?.toLowerCase()||'el viaje'} terminó llevándolos hasta este resultado.`
+          :`La party repasa dónde cambió el rumbo de la expedición y qué puede aprender de ello.`,
+        effects:[]
+      },
+      {
+        icon:'🏰',label:'ETAPA 5 · REGRESO',
+        title:'De vuelta al gremio',
+        text:'El Grifo de Plata espera noticias.',
+        effects:[]
+      }
     ];
 
     lines.push(`<p><b>${mission.name}</b> · ${party.map(h=>h.name).join(', ')}</p>`);
     lines.push(`<p class="muted">Plan: ${plan.pace.name} · ${plan.priority.name} · ${plan.supply.name}</p>`);
+    lines.push(`<p><b>Hilo de expedición:</b> ${chain.thread}</p>`);
     lines.push(`<p>Éxito estimado: <b>${Math.round(chance*100)}%</b></p>`);
 
-    applyFlavor(stages[0],'travel',lines);
+    addStageEffect(stages[0],chain.travel?.tag||'Viaje','');
     addStageEffect(stages[0],`${plan.pace.name} · ${plan.priority.name}`,'');
+    if(chain.travel?.chance>0) addStageEffect(stages[0],'El viaje mejora las opciones del grupo','good');
+    if(chain.travel?.injury>0) addStageEffect(stages[0],'El camino desgasta a la party','bad');
     if(plan.cost) addStageEffect(stages[0],`Suministros: -${plan.cost} oro`,'');
     syn.notes.forEach(n=>addStageEffect(stages[0],n,'good'));
     roleMods.notes.forEach(n=>addStageEffect(stages[0],n,'good'));
     addStageEffect(stages[0],`Química: ${chemistry.label}`,chemistry.score>=10?'bond':'');
+    lines.push(`<p><b>${stages[0].title}:</b> ${stages[0].text}</p>`);
 
-    applyFlavor(stages[1],'exploration',lines);
+    addStageEffect(stages[1],chain.exploration?.tag||'Exploración','');
+    if(chain.exploration?.chance>0) addStageEffect(stages[1],'Ventaja para el encuentro','good');
+    if(chain.exploration?.treasure>0) addStageEffect(stages[1],'Posible hallazgo adicional','good');
+    if(chain.exploration?.injury>0) addStageEffect(stages[1],'Mala posición para el peligro','bad');
+    lines.push(`<p><b>${stages[1].title}:</b> ${stages[1].text}</p>`);
     applyClassMoment(party,stages[1],lines);
     applyTraitMoment(party,stages[1],lines,extras);
 
-    combatEvent(party,mission,success,lines,stages[2],plan.injury+roleMods.injury);
+    combatEvent(party,mission,success,lines,stages[2],plan.injury+roleMods.injury+chain.injury);
+    addStageEffect(
+      stages[2],
+      `Consecuencia: ${chain.exploration?.title||'la exploración previa'}`,
+      chain.chance>=0?'good':'bad'
+    );
 
-    applyFlavor(stages[3],'camp',lines);
     personalityEvent(party,lines,stages[3]);
+    addStageEffect(stages[3],`Historia conectada: ${chain.thread}`,'');
     if(party.length>=3&&oneIn(3)) applyTraitMoment(party,stages[3],lines,extras);
 
-    let baseGain=Math.round(mission.reward*(success?(0.85+Math.random()*0.35):(0.1+Math.random()*0.15))*plan.reward);
-    if((state.planning.priority==='treasure'||roleMods.treasure>0)&&Math.random()<0.32+plan.treasure+roleMods.treasure){
+    let baseGain=Math.round(
+      mission.reward*(success?(0.85+Math.random()*0.35):(0.1+Math.random()*0.15))*plan.reward
+    );
+    if(
+      (state.planning.priority==='treasure'||roleMods.treasure>0||chain.treasure>0) &&
+      Math.random()<0.30+plan.treasure+roleMods.treasure+chain.treasure
+    ){
       const treasure=25+Math.floor(Math.random()*(35+mission.difficulty*20));
       extras.bonusGold+=treasure;
+      addStageEffect(stages[1],`Hallazgo ligado a la ruta: +${treasure} oro`,'good');
     }
+
     const gain=baseGain+extras.bonusGold;
     state.gold+=gain;
     state.stats.goldEarned+=gain;
@@ -1284,15 +1338,25 @@
       h.expeditions++;
       h.missionTypes[mission.type]=(h.missionTypes[mission.type]||0)+1;
       if(success) h.wins++;
+
       const training=state.facilities.training||0;
       const xp=Math.round((success?38+mission.difficulty*23:18+mission.difficulty*10)*(1+training*0.1));
       h.xp+=xp;
-      const motivated=applyMotivationProgress(h,mission,success);
+
+      const story=applyMotivationProgress(h,mission,success);
       const leveled=levelHeroIfNeeded(h);
+      if(leveled) leveledHeroes.push(h);
 
       addStageEffect(stages[3],`${h.name} +${xp} XP`,leveled?'good':'');
       if(h.injury) addStageEffect(stages[3],`${h.name}: ${h.injury.name} · ${h.injury.daysLeft}d`,'bad');
-      if(motivated) addStageEffect(stages[3],`${h.name}: objetivo personal`,'good');
+
+      if(story?.milestone){
+        storyBeats.push({hero:h,milestone:story.milestone});
+        addStageEffect(stages[3],`${h.name}: ${story.milestone.title}`,'good');
+      }else if(story?.progressed){
+        const arc=characterArcStatus(h);
+        if(arc.next) addStageEffect(stages[3],`${h.name}: historia personal ${arc.progress}/${arc.next.need}`,'');
+      }
 
       heroResults.push({
         title:`${DATA.classes[h.cls].icon} ${h.name}`,
@@ -1307,7 +1371,9 @@
         const social=(traitScore(party[i],'social')+traitScore(party[j],'social'))/2;
         const bond=Math.max(0,1+Math.round(social/2))+Math.min(1,tavern);
         const current=relation(party[i].id,party[j].id);
-        const attraction=current.bond>=22 && Math.random()<(0.16+tavern*0.04) ? 2+Math.min(2,tavern) : (oneIn(22)?1:0);
+        const attraction=current.bond>=22 && Math.random()<(0.16+tavern*0.04)
+          ?2+Math.min(2,tavern)
+          :(oneIn(22)?1:0);
         changeRelation(party[i].id,party[j].id,bond,success?0:1,attraction);
       }
     }
@@ -1326,43 +1392,63 @@
       }
     }
 
+    const newlyInjured=party.filter(h=>h.injury && beforeInjury.get(h.id)!==h.injury.id);
+
     state.missionsDone++;
     advanceDays(days,{recover:false});
-    if(Math.random()<0.3) triggerGuildLifeEvent(false);
     processRelationships(false);
     if(oldRep!==state.rep) checkRegionUnlocks();
 
+    const guildMoment=triggerContextualGuildMoment(party,{injured:newlyInjured,leveled:leveledHeroes});
+    if(!guildMoment && Math.random()<0.28) triggerGuildLifeEvent(false);
+
     const returnText=success
       ?rand([
-        `La party regresa con el contrato cumplido y ${gain} monedas para el gremio.`,
-        `El grupo cruza las puertas del gremio cansado, satisfecho y con ${gain} monedas.`,
-        `Las noticias de la victoria llegan junto a los aventureros. El gremio recibe ${gain} monedas.`
+        `La party regresa con el contrato cumplido y ${gain} monedas. En la sala común ya comentan “${chain.thread}”.`,
+        `El grupo cruza las puertas del gremio cansado, satisfecho y con ${gain} monedas. La ruta que tomaron ya forma parte del relato.`,
+        `Las noticias de la victoria llegan junto a los aventureros. El gremio recibe ${gain} monedas y una nueva historia.`
       ])
       :rand([
-        `El grupo regresa antes de lo esperado. El objetivo quedó pendiente, pero recuperaron ${gain} monedas.`,
-        `La expedición termina en retirada. Todos tendrán tiempo para aprender de lo ocurrido.`,
-        `El regreso es más silencioso. La misión falló, aunque el grupo vuelve con ${gain} monedas.`
+        `El grupo regresa antes de lo esperado. El objetivo quedó pendiente, pero todos recuerdan dónde cambió el rumbo: ${chain.thread}.`,
+        `La expedición termina en retirada. Lo ocurrido durante el viaje y la exploración será parte de la próxima preparación.`,
+        `El regreso es más silencioso. La misión falló, aunque el grupo vuelve con ${gain} monedas y experiencia real.`
       ]);
+
     stages[4].text=returnText;
     addStageEffect(stages[4],`+${gain} oro`,'good');
     addStageEffect(stages[4],`Reputación ${state.rep}`,success?'good':'');
+    addStageEffect(stages[4],`Hilo recordado: ${chain.thread}`,'');
     if(extras.bonusGold) addStageEffect(stages[4],`Hallazgos +${extras.bonusGold}`,'good');
+    storyBeats.forEach(x=>addStageEffect(stages[4],`${x.hero.name}: ${x.milestone.title}`,'good'));
+    if(guildMoment) addStageEffect(stages[4],`En el gremio: ${guildMoment.title}`,'bond');
 
-    addChronicle(`${party.map(h=>h.name).join(', ')} ${success?'completaron':'regresaron de'} ${mission.name}.`);
+    addChronicle(
+      `${party.map(h=>h.name).join(', ')} ${success?'completaron':'regresaron de'} ${mission.name}. ${chain.thread}.`
+    );
     lines.push(`<p class="${success?'good':'bad'}"><b>${success?'✓ Victoria':'↩ Retirada'} · +${gain} oro</b></p>`);
 
     const summary=[
       {title:success?'✓ Victoria':'↩ Retirada',text:`${mission.name} · ${days} días`,kind:success?'good':'bad'},
+      {title:'Hilo de la historia',text:chain.thread,kind:''},
       {title:'Tesorería',text:`+${gain} oro · Total ${state.gold}`,kind:'good'},
       {title:'Plan',text:`${plan.pace.name} · ${plan.priority.name} · ${plan.supply.name}`,kind:''},
       ...heroResults
     ];
+    storyBeats.forEach(x=>summary.push({
+      title:`✦ ${x.hero.name}`,
+      text:x.milestone.title,
+      kind:'good'
+    }));
     if(lost) summary.push({title:`☠ ${lost.name}`,text:'No regresó de la expedición.',kind:'bad'});
 
     $('report').innerHTML=lines.join('');
     $('resultTag').textContent=success?'Victoria':'Retirada';
 
-    expeditionView={mission,party,stages,summary,success,index:0,viewedStages:[]};
+    expeditionView={
+      mission,party,stages,summary,success,index:0,viewedStages:[],
+      chain,
+      storyBeats
+    };
     saveState(false);
     renderAll();
     navigate('mission');
