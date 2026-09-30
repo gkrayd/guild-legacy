@@ -1030,14 +1030,21 @@
     return named||party[index%Math.max(1,party.length)]||party[0];
   }
 
-  function partyTokens(party,featuredId=null){
+  function partyTokens(party,featuredId=null,stageIndex=0){
     return party.map((h,i)=>{
       const cls=DATA.classes[h.cls];
       const spec=specializationData(h);
-      const stateIcon=h.injury?'✚':featuredId===h.id?'✦':'•';
+      const hasStoryBeat=stageIndex>=3 && !!expeditionView?.storyBeats?.some(x=>x.hero.id===h.id);
+      const prepared=stageIndex===2 && (
+        expeditionView?.chain?.exploration?.id==='shortcut' ||
+        expeditionView?.chain?.exploration?.id==='warning'
+      );
+      const stateIcon=h.injury?'✚':hasStoryBeat?'✦':prepared?'◆':featuredId===h.id?'✦':'•';
       const classes=['story-hero-card'];
       if(h.injury) classes.push('injured');
       if(featuredId===h.id) classes.push('featured');
+      if(prepared) classes.push('story-prepared');
+      if(hasStoryBeat) classes.push('story-awakened');
       return `<div class="${classes.join(' ')}">
         <span class="story-hero-state">${stateIcon}</span>
         <div class="story-hero-portrait">${cls.icon}</div>
@@ -1116,11 +1123,16 @@
     $('expeditionTheater').classList.remove('complete');
     $('expeditionTitle').textContent=expeditionView.mission.name;
     $('storyObjective').textContent=expeditionView.mission.desc;
-    $('expeditionPartyVisual').innerHTML=partyTokens(expeditionView.party,featured?.id);
+    $('expeditionPartyVisual').innerHTML=partyTokens(expeditionView.party,featured?.id,index);
 
     const scene=$('storyScene');
-    scene.classList.remove('stage-travel','stage-exploration','stage-encounter','stage-camp','stage-return','story-good','story-danger','story-bond');
+    scene.classList.remove(
+      'stage-travel','stage-exploration','stage-encounter','stage-camp','stage-return',
+      'story-good','story-danger','story-bond',
+      'theme-combat','theme-exploration','theme-escort','theme-undead','theme-arcane','theme-legendary'
+    );
     scene.classList.add(stageVisualClass(index));
+    scene.classList.add(`theme-${expeditionView.mission.type}`);
     if(stage.effects.some(e=>e.kind==='bad')) scene.classList.add('story-danger');
     else if(stage.effects.some(e=>e.kind==='bond')) scene.classList.add('story-bond');
     else if(stage.effects.some(e=>e.kind==='good')) scene.classList.add('story-good');
