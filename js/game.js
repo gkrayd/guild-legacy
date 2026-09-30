@@ -1186,7 +1186,7 @@
       if(hasStoryBeat) classes.push('story-awakened');
       return `<div class="${classes.join(' ')}">
         <span class="story-hero-state">${stateIcon}</span>
-        <div class="story-hero-portrait">${cls.icon}</div>
+        <div class="story-hero-portrait">${classIconHtml(h.cls,h.cls)}</div>
         <div class="story-hero-info">
           <b>${h.name}</b>
           <small>${spec?.name||h.cls} · Nv.${h.level}${h.injury?' · '+h.injury.name:''}</small>
@@ -1276,6 +1276,10 @@
     );
     scene.classList.add(stageVisualClass(index));
     scene.classList.add(`theme-${expeditionView.mission.type}`);
+    scene.dataset.region=expeditionView.mission.region||'frontier';
+    scene.classList.remove('stage-transition');
+    void scene.offsetWidth;
+    scene.classList.add('stage-transition');
     if(stage.effects.some(e=>e.kind==='bad')) scene.classList.add('story-danger');
     else if(stage.effects.some(e=>e.kind==='bond')) scene.classList.add('story-bond');
     else if(stage.effects.some(e=>e.kind==='good')) scene.classList.add('story-good');
@@ -1745,7 +1749,7 @@
       const el=document.createElement('div');
       el.className='applicant-card';
       el.innerHTML=`
-        <div class="hero-name">${c.icon} ${a.name}${a.legacy?' <span class="heir-badge">· Legado</span>':''}</div>
+        <div class="hero-name hero-name-art">${classIconHtml(a.cls,a.cls)} <span>${a.name}${a.legacy?' <span class="heir-badge">· Legado</span>':''}</span></div>
         <div class="small">${a.cls} · ${c.role}</div>
         <div class="tiny">${a.traits.join(' · ')}</div>
         <div class="tiny">${a.origin} · ${mot?.name||''}</div>
@@ -1761,8 +1765,8 @@
       const level=state.facilities[key]||0;
       const max=level>=3;
       const cost=max?'MAX':`${f.costs[level]} oro`;
-      return `<div class="facility-card">
-        <span class="facility-icon">${f.icon}</span>
+      return `<div class="facility-card facility-card-art" data-level="${level}">
+        <span class="facility-art facility-${key}" aria-hidden="true"></span>
         <span><b>${f.name}</b> <span class="level">Nv.${level}</span><br><span class="tiny">${f.desc}</span></span>
         <button type="button" data-facility="${key}" ${max?'disabled':''}>${cost}</button>
       </div>`;
@@ -1787,7 +1791,7 @@
       btn.type='button';
       btn.className='adventurer-row';
       btn.innerHTML=`
-        <span class="class-icon">${DATA.classes[h.cls].icon}</span>
+        <span class="class-icon">${classIconHtml(h.cls,h.cls)}</span>
         <span><span class="hero-name">${h.name} · Nv.${h.level}</span><br>
         <span class="tiny">${spec?.name||h.cls} · ${h.age} años · Gen.${h.generation||1}${h.injury?' · '+h.injury.name+' '+h.injury.daysLeft+'d':''}</span>
         ${heroTitles(h).length?`<br><span class="tiny heir-badge">✦ ${heroTitles(h)[0]}</span>`:''}</span>
@@ -1808,7 +1812,7 @@
     const spec=specializationData(h);
     const mot=motivationData(h);
 
-    $('detailPortrait').textContent=cls.icon;
+    $('detailPortrait').innerHTML=classIconHtml(h.cls,`${h.name}, ${h.cls}`);
     $('detailName').textContent=h.name;
     $('detailMeta').textContent=`${spec?.name||h.cls} · Nv.${h.level} · ${h.age} años · Gen.${h.generation||1}`;
     $('detailStatusBadge').textContent=h.retired?'Veterano retirado':h.injury?`${h.injury.name} · ${h.injury.daysLeft} días`:'Activo y sano';
@@ -1903,7 +1907,7 @@
       const deploy=canDeploy(h);
       el.innerHTML=`<label>
         <input type="checkbox" ${checked?'checked':''} ${!deploy&&!checked?'disabled':''}>
-        <span><span class="hero-name">${DATA.classes[h.cls].icon} ${h.name} · Nv.${h.level}</span><br>
+        <span><span class="hero-name hero-name-art">${classIconHtml(h.cls,h.cls)} <span>${h.name} · Nv.${h.level}</span></span><br>
         <span class="tiny">${specializationData(h)?.name||h.cls} · ${h.traits.join(' + ')}${h.injury?' · '+h.injury.name+' '+h.injury.daysLeft+'d':''}</span></span>
       </label>`;
       const input=el.querySelector('input');
@@ -1919,7 +1923,7 @@
     for(let i=0;i<4;i++){
       const h=party[i];
       slots.push(h
-        ?`<div class="party-slot"><b>${i+1}.</b> ${DATA.classes[h.cls].icon} ${h.name} · ${specializationData(h)?.name||h.cls}</div>`
+        ?`<div class="party-slot party-slot-art"><b>${i+1}.</b> ${classIconHtml(h.cls,h.cls)} <span>${h.name} · ${specializationData(h)?.name||h.cls}</span></div>`
         :`<div class="party-slot empty"><b>${i+1}.</b> — vacío —</div>`);
     }
     $('partySlots').innerHTML=slots.join('');
@@ -1965,6 +1969,7 @@
       return;
     }
     const region=DATA.regions.find(r=>r.id===m.region);
+    $('screen-mission').dataset.region=m.region||'frontier';
     $('missionDetails').innerHTML=`<b>${m.name}</b> <span class="mission-region">${region?.name||''}</span><br>
       <span class="small">${m.desc}</span><br><br>
       Dificultad: ${'★'.repeat(m.difficulty)}${'☆'.repeat(Math.max(0,5-m.difficulty))} · Duración base: ${m.days} días · Recompensa: ${m.reward} oro`;
