@@ -1,5 +1,5 @@
 window.GUILD_DATA = {
-  version:'1.5',
+  version:'2.1',
   classes:{
     Guerrero:{icon:'⚔️',role:'Defensor',power:16,ability:'Interceptar'},
     Maga:{icon:'✨',role:'Daño mágico',power:17,ability:'Explosión Arcana'},
@@ -107,7 +107,10 @@ window.GUILD_DATA = {
     {id:'tower',region:'arcane',name:'Torre del Astrólogo Caído',difficulty:4,days:5,reward:760,type:'arcane',desc:'Magia hostil, constructos y secretos de un astrólogo desaparecido.'},
     {id:'leyline',region:'arcane',name:'La línea de luz',difficulty:3,days:4,reward:650,type:'arcane',desc:'Estabilizar una anomalía mágica antes de que alcance un poblado.'},
     {id:'giantpass',region:'highlands',name:'Paso del Gigante',difficulty:4,days:5,reward:880,type:'combat',desc:'Abrir de nuevo un paso montañoso cerrado por criaturas enormes.'},
-    {id:'stormshrine',region:'highlands',name:'Santuario de la Tormenta',difficulty:5,days:6,reward:1100,type:'legendary',desc:'Una expedición prestigiosa a un santuario casi olvidado.'}
+    {id:'stormshrine',region:'highlands',name:'Santuario de la Tormenta',difficulty:5,days:6,reward:1100,type:'legendary',desc:'Una expedición prestigiosa a un santuario casi olvidado.'},
+    {id:'royalvault',region:'oldkingdom',name:'La Cámara del Juramento',difficulty:4,days:5,reward:720,type:'undead',desc:'Una cámara sellada bajo el Viejo Reino guarda pruebas sobre la caída de una antigua dinastía.'},
+    {id:'observatory',region:'arcane',name:'Observatorio de la Segunda Luna',difficulty:5,days:6,reward:980,type:'arcane',desc:'Un observatorio vuelve a emitir señales imposibles después de décadas en silencio.'},
+    {id:'skybridge',region:'highlands',name:'Puente sobre las Nubes',difficulty:5,days:7,reward:1250,type:'legendary',desc:'Los clanes piden ayuda para reabrir una ruta suspendida entre dos picos.'}
   ],
   encounterPools:{
     combat:['una patrulla hostil','una emboscada bien preparada','una criatura territorial','un líder enemigo con sus guardias'],
@@ -201,7 +204,38 @@ window.GUILD_DATA = {
     {id:'rivalry_argument',kind:'tension',title:'Una discusión que todos escucharon'},
     {id:'romance_walk',kind:'romance',title:'Un paseo después de cenar'},
     {id:'veteran_story',kind:'veteran',title:'Una historia de veteranos'}
+  ],,
+  veteranRoles:{
+    mentor:{name:'Mentor',icon:'✦',desc:'Transfiere experiencia a aventureros jóvenes.',effect:'xp'},
+    steward:{name:'Mayordomo del gremio',icon:'⌂',desc:'Ayuda a controlar gastos y organización.',effect:'economy'},
+    instructor:{name:'Instructor',icon:'⚔',desc:'Mejora el entrenamiento y la preparación.',effect:'success'},
+    archivist:{name:'Cronista',icon:'✧',desc:'Conserva historias y favorece conocimiento regional.',effect:'knowledge'}
+  },
+  guildIdentities:{
+    protector:{name:'Baluarte del Camino',icon:'⬟',desc:'Un gremio conocido por traer a su gente de vuelta.',keys:['safety','protect']},
+    explorer:{name:'Buscadores del Horizonte',icon:'◇',desc:'Su nombre se asocia con rutas, ruinas y descubrimientos.',keys:['exploration','knowledge']},
+    mercenary:{name:'Compañía del Grifo',icon:'◆',desc:'Eficientes, rentables y fiables con contratos difíciles.',keys:['treasure','wealth']},
+    scholar:{name:'Custodios de lo Antiguo',icon:'✦',desc:'Especialistas en secretos, magia e historia.',keys:['arcane','knowledge']},
+    fellowship:{name:'Hogar del Grifo',icon:'♥',desc:'La comunidad y los vínculos internos definen al gremio.',keys:['bond','family']},
+    renowned:{name:'Estandarte de Plata',icon:'★',desc:'Prestigio, victorias y nombres conocidos por toda la región.',keys:['glory','reputation']}
+  },
+  factions:[
+    {id:'greenward',name:'Liga de Valleverde',region:'frontier',desc:'Comerciantes, granjeros y aldeas fronterizas.',start:0},
+    {id:'crownless',name:'Custodios del Viejo Reino',region:'oldkingdom',desc:'Eruditos y nobles menores ligados a las ruinas.',start:0},
+    {id:'astral',name:'Círculo de las Marcas',region:'arcane',desc:'Estudiosos de fenómenos arcanos y antiguas torres.',start:0},
+    {id:'highclans',name:'Clanes de las Tierras Altas',region:'highlands',desc:'Comunidades montañesas, cazadores y guardianes de pasos.',start:0}
   ],
+  missionChains:[
+    {id:'greenroad',name:'El Camino de Valleverde',missions:['caravan','goblins','forest'],rewardTitle:'Amigos de Valleverde'},
+    {id:'namelessking',name:'Ecos del Rey Sin Nombre',missions:['watchtower','crypt','royalvault'],rewardTitle:'Memoria del Viejo Reino'},
+    {id:'fallenstars',name:'Las Estrellas Caídas',missions:['leyline','tower','observatory'],rewardTitle:'Testigos de las Marcas'},
+    {id:'stormroad',name:'El Camino de la Tormenta',missions:['giantpass','stormshrine','skybridge'],rewardTitle:'Huéspedes de las Alturas'}
+  ],
+  lineageLegacies:[
+    {id:'protectors',name:'Casa Protectora',desc:'Descendientes con facilidad para profesiones defensivas.',classes:['Guerrero','Paladin','Sacerdotisa']},
+    {id:'seekers',name:'Casa de Buscadores',desc:'Una familia atraída por secretos y exploración.',classes:['Maga','Picaro','Arquera']},
+    {id:'veterans',name:'Casa de Veteranos',desc:'La experiencia del gremio pesa en cada nueva generación.',classes:Object.keys({Guerrero:1,Maga:1,Sacerdotisa:1,Picaro:1,Arquera:1,Paladin:1})}
+  ]
   guildLifeEvents:[
     {id:'festival',title:'Festival local',text:'El gremio participa en una celebración del pueblo.',gold:-25,rep:2,bond:2},
     {id:'merchant',title:'Mercader visitante',text:'Un mercader ofrece suministros y conversa con los aventureros.',gold:-15,rep:1,bond:0},
