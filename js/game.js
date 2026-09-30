@@ -327,8 +327,8 @@
   function recruit(id){
     const a=state.applicants.find(x=>x.id===id);
     if(!a) return;
-    if(activeMembers().length>=12){
-      notice('El roster activo admite un máximo de 12 aventureros.');
+    if(activeMembers().length>=(DATA.balance?.rosterCap||14)){
+      notice(`El roster activo admite un máximo de ${DATA.balance?.rosterCap||14} aventureros.`);
       return;
     }
     if(state.gold<a.cost){
@@ -634,7 +634,7 @@
       }
     });
 
-    state.roster.filter(h=>h.alive!==false&&!h.retired&&h.age>=55).forEach(h=>retireHero(h,false));
+    state.roster.filter(h=>h.alive!==false&&!h.retired&&h.age>=(DATA.balance?.retirementAge||58)).forEach(h=>retireHero(h,false));
 
     const mentors=state.roster.filter(h=>h.retired&&h.alive!==false&&h.veteranRole==='mentor');
     const pupils=activeMembers().filter(h=>h.age<=25||(h.generation||1)>1);
@@ -840,7 +840,7 @@
       if(a.age<20||b.age<20||a.age>45||b.age>45) return;
       const existing=state.children.filter(c=>c.parentIds.includes(a.id)&&c.parentIds.includes(b.id));
       if(existing.length>=3) return;
-      if(Math.random()<0.35) createChild(a,b);
+      if(Math.random()<(DATA.balance?.familyGrowthChance||0.30)) createChild(a,b);
     });
   }
 
@@ -1446,7 +1446,10 @@
     applyClassMoment(party,stages[1],lines);
     applyTraitMoment(party,stages[1],lines,extras);
 
-    combatEvent(party,mission,success,lines,stages[2],plan.injury+roleMods.injury+chain.injury);
+    combatEvent(
+      party,mission,success,lines,stages[2],
+      (plan.injury+roleMods.injury+chain.injury)*(DATA.balance?.injuryRiskScale||1)
+    );
     addStageEffect(
       stages[2],
       `Consecuencia: ${chain.exploration?.title||'la exploración previa'}`,
@@ -1458,7 +1461,7 @@
     if(party.length>=3&&oneIn(3)) applyTraitMoment(party,stages[3],lines,extras);
 
     let baseGain=Math.round(
-      mission.reward*(success?(0.85+Math.random()*0.35):(0.1+Math.random()*0.15))*plan.reward
+      mission.reward*(success?(0.85+Math.random()*0.35):(0.1+Math.random()*0.15))*plan.reward*(DATA.balance?.expeditionRewardScale||1)
     );
     if(
       (state.planning.priority==='treasure'||roleMods.treasure>0||chain.treasure>0) &&
@@ -1522,7 +1525,7 @@
     for(let i=0;i<party.length;i++){
       for(let j=i+1;j<party.length;j++){
         const social=(traitScore(party[i],'social')+traitScore(party[j],'social'))/2;
-        const bond=Math.max(0,1+Math.round(social/2))+Math.min(1,tavern);
+        const bond=Math.round((Math.max(0,1+Math.round(social/2))+Math.min(1,tavern))*(DATA.balance?.relationshipBondScale||1));
         const current=relation(party[i].id,party[j].id);
         const attraction=current.bond>=22 && Math.random()<(0.16+tavern*0.04)
           ?2+Math.min(2,tavern)
@@ -1534,7 +1537,7 @@
     let lost=null;
     if(!success&&mission.difficulty>=4){
       const danger=party.filter(h=>h.injury?.severity===3);
-      if(danger.length&&Math.random()<0.035+mission.difficulty*0.005){
+      if(danger.length&&Math.random()<(DATA.balance?.deathBase||0.02)+mission.difficulty*(DATA.balance?.deathPerDifficulty||0.003)){
         lost=rand(danger);
         lost.alive=false;
         state.stats.deaths++;
