@@ -850,7 +850,7 @@
   }
 
   function applyMotivationProgress(hero,mission,success){
-    if(!success) return false;
+    if(!success) return null;
     const id=hero.motivation;
     let match=false;
     if(id==='protect' && ['Paladin','Guerrero','Sacerdotisa'].includes(hero.cls)) match=true;
@@ -859,17 +859,22 @@
     if(id==='family' && mission.reward>=400) match=true;
     if(id==='wealth' && state.planning.priority==='treasure') match=true;
     if(id==='mastery') match=true;
-    if(!match) return false;
+    if(!match) return null;
 
-    hero.motivationProgress=(hero.motivationProgress||0)+1;
-    if(hero.motivationProgress>=3){
-      hero.motivationProgress=0;
-      hero.xp+=20;
-      addMemory(hero,`alcanzó un hito personal relacionado con “${motivationData(hero).name}”.`);
-      addChronicle(`${hero.name} alcanza un importante objetivo personal.`);
-      return true;
-    }
-    return false;
+    hero.storyProgress=(hero.storyProgress||0)+1;
+    hero.motivationProgress=hero.storyProgress;
+
+    const arc=DATA.characterArcs?.[id]||[];
+    const milestone=arc.find(b=>hero.storyProgress>=b.need && !(hero.storyMilestones||[]).includes(b.id));
+    if(!milestone) return {progressed:true,milestone:null};
+
+    hero.storyMilestones=hero.storyMilestones||[];
+    hero.storyMilestones.push(milestone.id);
+    hero.lastStoryBeat=milestone.title;
+    hero.xp+=20;
+    addMemory(hero,`alcanzó el hito personal “${milestone.title}”: ${milestone.text}`);
+    addChronicle(`${hero.name} vive un momento importante de su historia personal: ${milestone.title}.`);
+    return {progressed:true,milestone};
   }
 
   function setExpeditionControls(running){
