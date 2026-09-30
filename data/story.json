@@ -1,0 +1,25 @@
+{
+  "chapter":"Capítulo I",
+  "scene":2,
+  "tag":"EL EXPLORADOR ENTRA SOLO",
+  "title":"El explorador entra solo",
+  "image":"assets/scenes/scene_002.webp",
+  "paragraphs":[
+    "Nilo cruza el umbral sin hacer ruido. La temperatura cambia de inmediato.",
+    "Afuera, Garran, Lyra y Aldren esperan junto a las escaleras mientras el pícaro desaparece entre la luz azul del corredor.",
+    "Dentro, Nilo avanza pegado a la pared. El pasillo parece demasiado limpio para ser una ruina abandonada. No hay polvo. No hay telarañas. Y las antorchas azules arden sin producir humo.",
+    "Tras unos veinte metros encuentra una pequeña cámara lateral con cuatro mochilas abandonadas, restos de comida todavía relativamente fresca y una espada rota. Hay sangre seca en el suelo. Pero ningún cadáver.",
+    "Entonces escucha algo: Clac. Clac. Clac. Proviene del corredor principal. Algo se acerca lentamente desde la oscuridad.",
+    "Nilo mira hacia atrás. La salida todavía está cerca. Pero al otro lado del pasillo distingue una escalera que desciende más profundamente en el complejo. Tiene solo unos segundos para decidir."
+  ],
+  "choices":[
+    {"id":1,"icon":"🏃","title":"Nilo regresa inmediatamente","description":"No vale la pena arriesgarse. Vuelve con el grupo y cuenta todo lo descubierto."},
+    {"id":2,"icon":"👁️","title":"Nilo se oculta y observa","description":"Se esconde en la habitación de las mochilas para descubrir qué produce el sonido."},
+    {"id":3,"icon":"🗡️","title":"Nilo sigue explorando","description":"Ignora el ruido y baja por las escaleras antes de que aquello pueda verlo."},
+    {"id":4,"icon":"✋","title":"Nilo hace una señal al grupo","description":"Indica a los demás que entren en silencio. Los cuatro continuarán juntos."}
+  ],
+  "history":[
+    {"scene":1,"title":"La puerta que no debía estar abierta","image":"assets/scenes/scene_001.webp","choice":"2 · Enviar a Nilo a explorar"},
+    {"scene":2,"title":"El explorador entra solo","image":"assets/scenes/scene_002.webp","choice":null}
+  ]
+}
