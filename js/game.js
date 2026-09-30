@@ -635,8 +635,8 @@
   }
 
   function advanceYear(){
-    advanceDays(90,{guildEvent:true});
-    triggerGuildLifeEvent(true);
+    advanceDays(90,{guildEvent:false});
+    if(!triggerContextualGuildMoment()) triggerGuildLifeEvent(true);
     renderAll();
     notice('Ha pasado un año de vida en el gremio.');
   }
