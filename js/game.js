@@ -419,6 +419,12 @@
     }else{
       hero.injury.daysLeft+=Math.max(1,Math.floor(template.daysLeft/2));
     }
+    if(hero.injury.severity>=2 && Math.random()<0.26){
+      hero.pendingScar={
+        source:hero.injury.name,
+        title:hero.injury.id==='burn'?'Marca de fuego':hero.injury.id==='fracture'?'Vieja fractura':'Cicatriz de expedición'
+      };
+    }
     state.stats.injuries++;
     addMemory(hero,`sufrió ${hero.injury.name.toLowerCase()} durante una expedición.`);
     return hero.injury;
@@ -433,6 +439,14 @@
         h.injury=null;
         addMemory(h,`se recuperó de ${name.toLowerCase()}.`);
         addChronicle(`${h.name} se recupera de ${name.toLowerCase()} y vuelve a estar disponible.`);
+        if(h.pendingScar){
+          const scar={...h.pendingScar,year:state.year};
+          h.scars=h.scars||[];
+          h.scars.push(scar);
+          addMemory(h,`conservó una ${scar.title.toLowerCase()} como recuerdo de aquella herida.`);
+          addChronicle(`${h.name} vuelve a la actividad con una nueva cicatriz que ya forma parte de su historia.`);
+          h.pendingScar=null;
+        }
       }
     });
   }
