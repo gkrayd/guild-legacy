@@ -310,7 +310,9 @@
       cost:extra.cost,
       legacy:!!extra.legacy,
       generation:extra.generation||1,
-      parentIds:extra.parentIds||[]
+      parentIds:extra.parentIds||[],
+      lineageName:extra.lineageName||null,
+      familyExpectation:extra.familyExpectation||null
     },true);
   }
 
@@ -600,20 +602,31 @@
       child.age=(child.age||0)+1;
       if(child.age>=16 && !child.introduced){
         child.introduced=true;
-        const inheritedClass=rand(child.classAffinity||Object.keys(DATA.classes));
+        const follows=child.familyExpectation!=='propio';
+        const inheritedClass=follows
+          ?rand(child.classAffinity||Object.keys(DATA.classes))
+          :rand(Object.keys(DATA.classes).filter(c=>!(child.classAffinity||[]).includes(c)).length
+            ?Object.keys(DATA.classes).filter(c=>!(child.classAffinity||[]).includes(c))
+            :Object.keys(DATA.classes));
         state.applicants.push(makeApplicant({
           name:child.name,
           cls:inheritedClass,
           traits:child.traits,
           age:16,
-          origin:'Familia del Gremio del Grifo',
+          origin:child.lineageName||'Familia del Gremio del Grifo',
           motivation:child.motivation,
-          cost:60,
+          cost:50,
           legacy:true,
           generation:child.generation,
-          parentIds:child.parentIds
+          parentIds:child.parentIds,
+          lineageName:child.lineageName,
+          familyExpectation:child.familyExpectation
         }));
-        addChronicle(`${child.name}, descendiente del gremio, alcanza edad para presentarse como aspirante.`);
+        addChronicle(
+          follows
+            ?`${child.name}, descendiente de ${child.lineageName||'una familia del gremio'}, decide seguir el camino familiar como aspirante.`
+            :`${child.name}, descendiente de ${child.lineageName||'una familia del gremio'}, se presenta como aspirante pero elige un camino distinto al de su familia.`
+        );
       }
     });
 
@@ -725,6 +738,19 @@
     });
   }
 
+  function familyLineage(a,b){
+    const key=[a.id,b.id].sort((x,y)=>x-y).join('-');
+    if(state.lineageRegistry[key]) return state.lineageRegistry[key];
+    const dominant=(a.storyProgress||0)>=(b.storyProgress||0)?a:b;
+    const archetype=dominant.motivation==='protect'?'protectors':
+      dominant.motivation==='knowledge'?'seekers':'veterans';
+    const template=DATA.lineageLegacies.find(x=>x.id===archetype)||DATA.lineageLegacies[0];
+    const title=`Casa de ${a.name} y ${b.name}`;
+    const lineage={key,title,legacyId:template.id,desc:template.desc,founders:[a.id,b.id],generation:1};
+    state.lineageRegistry[key]=lineage;
+    return lineage;
+  }
+
   function createChild(a,b){
     const inherited=[];
     inherited.push(rand(a.traits||randomTraits()));
@@ -734,6 +760,7 @@
       const pool=Object.keys(DATA.traits).filter(t=>!inherited.includes(t));
       inherited.push(rand(pool));
     }
+    const lineage=familyLineage(a,b);
     const child={
       id:`child-${Date.now()}-${Math.floor(Math.random()*9999)}`,
       name:rand(DATA.names),
@@ -741,18 +768,24 @@
       parentIds:[a.id,b.id],
       traits:inherited,
       motivation:Math.random()<0.5?a.motivation:b.motivation,
-      classAffinity:[a.cls,b.cls],
+      classAffinity:[...new Set([a.cls,b.cls,...((DATA.lineageLegacies.find(x=>x.id===lineage.legacyId)||{}).classes||[])])],
       generation:Math.max(a.generation||1,b.generation||1)+1,
-      introduced:false
+      introduced:false,
+      lineageName:lineage.title,
+      lineageKey:lineage.key,
+      familyExpectation:Math.random()<0.72?'seguir':'propio',
+      inheritedTitle:heroTitles(a)[0]||heroTitles(b)[0]||null
     };
     state.children.push(child);
     a.children=a.children||[];
     b.children=b.children||[];
     a.children.push(child.id);
     b.children.push(child.id);
-    addChronicle(`${a.name} y ${b.name} reciben a ${child.name} en su familia.`);
-    addMemory(a,`${child.name} pasó a formar parte de su familia.`);
-    addMemory(b,`${child.name} pasó a formar parte de su familia.`);
+    a.lineageName=lineage.title;
+    b.lineageName=lineage.title;
+    addChronicle(`${a.name} y ${b.name} reciben a ${child.name} en ${lineage.title}.`);
+    addMemory(a,`${child.name} pasó a formar parte de ${lineage.title}.`);
+    addMemory(b,`${child.name} pasó a formar parte de ${lineage.title}.`);
     return child;
   }
 
