@@ -1,5 +1,5 @@
 window.GUILD_DATA = {
-  version:'1.2',
+  version:'1.5',
   classes:{
     Guerrero:{icon:'⚔️',role:'Defensor',power:16,ability:'Interceptar'},
     Maga:{icon:'✨',role:'Daño mágico',power:17,ability:'Explosión Arcana'},
@@ -147,7 +147,61 @@ window.GUILD_DATA = {
     Sacerdotisa:['encuentra un pequeño santuario y propone detenerse unos minutos','reconoce símbolos religiosos antiguos y explica su significado'],
     Guerrero:['advierte que el terreno sería perfecto para una emboscada','encuentra señales de combate y reconstruye lo ocurrido'],
     Paladin:['descubre un emblema de una antigua orden','propone una formación más segura antes de entrar en una zona estrecha']
+  },,
+  expeditionChains:{
+    travel:[
+      {id:'good_weather',title:'Cielo favorable',text:'El clima acompaña y la party conserva fuerzas para la exploración.',chance:0.025,injury:-0.015,tag:'Buen ritmo'},
+      {id:'bad_weather',title:'Camino castigado',text:'La lluvia y el barro ralentizan al grupo y obligan a gastar más energía.',chance:-0.02,injury:0.02,tag:'Terreno difícil'},
+      {id:'local_tip',title:'Consejo de un viajero',text:'Un viajero señala una ruta menos transitada que podría ahorrar problemas más adelante.',chance:0.02,treasure:0.03,tag:'Información útil'},
+      {id:'quiet_road',title:'Marcha tranquila',text:'Nada extraordinario ocurre y la party llega a la zona con buen ánimo.',chance:0,injury:0,tag:'Sin incidentes'}
+    ],
+    exploration:[
+      {id:'shortcut',title:'Atajo descubierto',text:'La party encuentra una ruta que permite elegir mejor cómo afrontar el peligro.',chance:0.035,injury:-0.02,tag:'Ventaja táctica'},
+      {id:'warning',title:'Señales de peligro',text:'Rastros recientes revelan dónde podría producirse una emboscada.',chance:0.02,injury:-0.035,tag:'Peligro anticipado'},
+      {id:'cache',title:'Escondite olvidado',text:'La exploración revela provisiones y monedas dejadas por viajeros anteriores.',chance:0,treasure:0.08,tag:'Hallazgo'},
+      {id:'wrong_turn',title:'Desvío confuso',text:'Un camino engañoso hace perder tiempo y deja al grupo peor posicionado.',chance:-0.035,injury:0.02,tag:'Mala posición'}
+    ]
   },
+  characterArcs:{
+    protect:[
+      {id:'protector_1',title:'Alguien en quien confiar',need:2,text:'Ha empezado a demostrar que otros pueden depender de él o ella.'},
+      {id:'protector_2',title:'Escudo del grupo',need:5,text:'Su instinto de proteger a otros ya define su reputación.'},
+      {id:'protector_3',title:'Promesa cumplida',need:9,text:'Ha convertido su deseo de proteger en una parte central de su vida.'}
+    ],
+    glory:[
+      {id:'glory_1',title:'Primer nombre conocido',need:2,text:'Su nombre empieza a circular entre clientes y aspirantes.'},
+      {id:'glory_2',title:'Renombre ganado',need:5,text:'Ya no necesita presentarse dos veces en el gremio.'},
+      {id:'glory_3',title:'Nombre para la crónica',need:9,text:'Ha logrado la clase de reputación que soñaba construir.'}
+    ],
+    knowledge:[
+      {id:'knowledge_1',title:'Preguntas correctas',need:2,text:'Cada expedición le deja nuevas preguntas y algunas respuestas.'},
+      {id:'knowledge_2',title:'Buscador de secretos',need:5,text:'Se ha convertido en quien insiste en mirar detrás de la puerta olvidada.'},
+      {id:'knowledge_3',title:'Memoria de lo antiguo',need:9,text:'Su experiencia conecta ruinas, símbolos y relatos que otros pasarían por alto.'}
+    ],
+    family:[
+      {id:'family_1',title:'Algo que enviar a casa',need:2,text:'Ya ha conseguido ayudar a quienes dejó atrás.'},
+      {id:'family_2',title:'Un futuro más estable',need:5,text:'Su trabajo empieza a cambiar la vida de su familia.'},
+      {id:'family_3',title:'Hogar asegurado',need:9,text:'Ha construido la seguridad que buscaba cuando decidió aventurarse.'}
+    ],
+    wealth:[
+      {id:'wealth_1',title:'Buen ojo para el beneficio',need:2,text:'Ha aprendido a reconocer oportunidades que otros ignoran.'},
+      {id:'wealth_2',title:'Fortuna en marcha',need:5,text:'Su nombre ya se asocia con expediciones rentables.'},
+      {id:'wealth_3',title:'Prosperidad conseguida',need:9,text:'La aventura le ha dado la prosperidad que perseguía.'}
+    ],
+    mastery:[
+      {id:'mastery_1',title:'Disciplina de oficio',need:2,text:'Empieza a destacar por cómo utiliza su clase en situaciones reales.'},
+      {id:'mastery_2',title:'Técnica reconocida',need:5,text:'Otros aventureros ya observan y comentan su forma de trabajar.'},
+      {id:'mastery_3',title:'Maestría vivida',need:9,text:'La experiencia acumulada ha convertido el oficio en algo propio.'}
+    ]
+  },
+  livingGuildMoments:[
+    {id:'injury_visit',kind:'injury',title:'Una visita durante la recuperación'},
+    {id:'level_celebration',kind:'level',title:'Brindis por un nuevo nivel'},
+    {id:'friends_training',kind:'bond',title:'Entrenamiento entre compañeros'},
+    {id:'rivalry_argument',kind:'tension',title:'Una discusión que todos escucharon'},
+    {id:'romance_walk',kind:'romance',title:'Un paseo después de cenar'},
+    {id:'veteran_story',kind:'veteran',title:'Una historia de veteranos'}
+  ],
   guildLifeEvents:[
     {id:'festival',title:'Festival local',text:'El gremio participa en una celebración del pueblo.',gold:-25,rep:2,bond:2},
     {id:'merchant',title:'Mercader visitante',text:'Un mercader ofrece suministros y conversa con los aventureros.',gold:-15,rep:1,bond:0},
