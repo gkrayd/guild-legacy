@@ -29,22 +29,17 @@
   };
   const classIconAsset=cls=>CLASS_ART[cls]||'assets/art/grifo-silver.svg';
   const classIconHtml=(cls,label='')=>`<img class="class-art-icon" src="${classIconAsset(cls)}" alt="${label||cls}" loading="lazy">`;
-  const PORTRAIT_ART={
-    Guerrero:'assets/portraits/warrior.svg',
-    Maga:'assets/portraits/mage.svg',
-    Sacerdotisa:'assets/portraits/priestess.svg',
-    Picaro:'assets/portraits/rogue.svg',
-    Arquera:'assets/portraits/archer.svg',
-    Paladin:'assets/portraits/paladin.svg'
-  };
-  const portraitAsset=cls=>PORTRAIT_ART[cls]||PORTRAIT_ART.Guerrero;
+  const portraitClass=cls=>({
+    Guerrero:'guerrero',Maga:'maga',Sacerdotisa:'sacerdotisa',
+    Picaro:'picaro',Arquera:'arquera',Paladin:'paladin'
+  })[cls]||'guerrero';
   function portraitHtml(hero,extraClass=''){
     const ageClass=hero.age>=50?'portrait-veteran':hero.age<=22?'portrait-young':'portrait-adult';
     const legacy=(hero.generation||1)>1?'<span class="portrait-badge legacy">LEGADO</span>':'';
     const injured=hero.injury?'<span class="portrait-badge injured">HERIDO</span>':'';
     const scars=hero.scars?.length?'<span class="portrait-scar-mark">✦</span>':'';
-    return `<span class="portrait-shell ${ageClass} ${extraClass}">
-      <img class="portrait-art" src="${portraitAsset(hero.cls)}" alt="${hero.name}, ${hero.cls}" loading="lazy">
+    return `<span class="portrait-shell portrait-${portraitClass(hero.cls)} ${ageClass} ${extraClass}" role="img" aria-label="${hero.name}, ${hero.cls}">
+      <span class="portrait-art-layer" aria-hidden="true"></span>
       ${legacy}${injured}${scars}
     </span>`;
   }
@@ -2201,7 +2196,7 @@
   });
 
   $('resetBtn').addEventListener('click',()=>{
-    if(!window.confirm('¿Reiniciar toda la partida V2.4 y borrar el guardado local?')) return;
+    if(!window.confirm('¿Reiniciar toda la partida V2.5 y borrar el guardado local?')) return;
     localStorage.removeItem(SAVE_KEY);
     localStorage.removeItem(LEGACY_SAVE_KEY);
     state=freshState();
